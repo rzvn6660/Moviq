@@ -1,0 +1,7 @@
+# Optional heavy ML dependencies required for local Wan2.1 T2V 1.3B GPU inference
+torch>=2.0.0
+diffusers>=0.35.0
+transformers>=4.40.0
+accelerate>=0.28.0
+sentencepiece>=0.2.0
+imageio-ffmpeg>=0.4.9
