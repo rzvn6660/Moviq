@@ -13,11 +13,13 @@ export type UIState =
 export type StylePreset = 'Cinematic' | 'Realistic' | 'Anime' | '3D';
 export type AspectRatio = '16:9' | '9:16' | '1:1';
 export type Duration = '5s' | '10s' | '15s';
+export type ExecutionMode = 'Hosted Inference' | 'Hosted API' | 'Self-Hosted GPU' | 'External Web' | 'Simulation / Demo';
 
 export interface ModelCapability {
   id: string;
   name: string;
   provider: string;
+  executionMode?: ExecutionMode;
   tag: string;
   description: string;
   supportedAspectRatios: AspectRatio[];
@@ -26,6 +28,9 @@ export interface ModelCapability {
   maxDurationSeconds?: number;
   renderProfileDescription?: string;
   isAvailable: boolean;
+  configured?: boolean;
+  statusLabel?: string;
+  externalUrl?: string;
 }
 
 export interface StructuredDirection {
@@ -66,6 +71,7 @@ export interface GenerationMetadata {
   id: string;
   model: string;
   provider: string;
+  executionMode?: string;
   style: StylePreset;
   aspectRatio: AspectRatio;
   duration: Duration;

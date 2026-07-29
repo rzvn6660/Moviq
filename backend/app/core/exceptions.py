@@ -99,10 +99,11 @@ class NegativePromptNotSupportedException(MoviqException):
 
 
 class ProviderFailureException(MoviqException):
-    def __init__(self, provider: str, details: str):
+    def __init__(self, provider_or_message: str, details: Optional[str] = None):
+        msg = f"Provider '{provider_or_message}' failed generation request: {details}" if details else provider_or_message
         super().__init__(
             code="PROVIDER_FAILURE",
-            message=f"Provider '{provider}' failed generation request: {details}",
+            message=msg,
             status_code=status.HTTP_502_BAD_GATEWAY,
             retryable=True,
         )
@@ -410,5 +411,67 @@ class WANInvalidOutputException(MoviqException):
             status_code=status.HTTP_502_BAD_GATEWAY,
             retryable=True,
         )
+
+
+# Remote Wan2.1 GPU Worker Exceptions
+class RemoteWANConfigurationErrorException(MoviqException):
+    def __init__(self, message: str = "REMOTE_WAN_URL is not configured on the backend server"):
+        super().__init__(
+            code="REMOTE_WAN_CONFIGURATION_ERROR",
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            retryable=False,
+        )
+
+
+class RemoteWANUnavailableException(MoviqException):
+    def __init__(self, message: str = "Remote Wan2.1 GPU worker is unreachable or offline"):
+        super().__init__(
+            code="REMOTE_WAN_UNAVAILABLE",
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            retryable=True,
+        )
+
+
+class RemoteWANTimeoutException(MoviqException):
+    def __init__(self, message: str = "Remote Wan2.1 GPU worker request timed out"):
+        super().__init__(
+            code="REMOTE_WAN_TIMEOUT",
+            message=message,
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            retryable=True,
+        )
+
+
+class RemoteWANAuthenticationErrorException(MoviqException):
+    def __init__(self, message: str = "Authentication with remote Wan2.1 GPU worker failed"):
+        super().__init__(
+            code="REMOTE_WAN_AUTHENTICATION_ERROR",
+            message=message,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            retryable=False,
+        )
+
+
+class RemoteWANGenerationFailedException(MoviqException):
+    def __init__(self, message: str = "Remote Wan2.1 GPU worker reported a generation error"):
+        super().__init__(
+            code="REMOTE_WAN_GENERATION_FAILED",
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class RemoteWANInvalidResultException(MoviqException):
+    def __init__(self, message: str = "Result payload or downloaded video from remote Wan2.1 worker was invalid"):
+        super().__init__(
+            code="REMOTE_WAN_INVALID_RESULT",
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
 
 

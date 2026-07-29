@@ -32,8 +32,10 @@ export class MoviqApiClient {
           const data: ModelsResponse = await response.json();
           return data.models;
         }
-      } catch (err) {
-        console.warn("Failed to reach backend /models endpoint, falling back to client fixtures", err);
+        throw new Error(`Failed to fetch models: HTTP ${response.status}`);
+      } catch (err: any) {
+        console.error("Backend /models endpoint error:", err);
+        throw new Error(`Backend connection error: ${err.message || 'Unable to fetch models from FastAPI server'}`);
       }
     }
     return MOCK_MODEL_CAPABILITIES;
@@ -54,7 +56,7 @@ export class MoviqApiClient {
     if (trimmed.length > 30) score += 20;
     if (trimmed.length > 80) score += 15;
 
-    const subjectKeywords = ['bottle', 'car', 'person', 'astronaut', 'warrior', 'cat', 'building', 'eye', 'landscape', 'robot'];
+    const subjectKeywords = ['bottle', 'car', 'train', 'person', 'astronaut', 'warrior', 'cat', 'building', 'eye', 'landscape', 'robot'];
     const lightingKeywords = ['lighting', 'spotlight', 'sunlight', 'golden', 'neon', 'shadows', 'raytracing', 'volumetric'];
     const cameraKeywords = ['shot', 'macro', 'angle', 'tracking', 'anamorphic', 'lens', 'pan', 'zoom', 'slow motion', 'fps'];
 
@@ -96,11 +98,12 @@ export class MoviqApiClient {
         if (response.ok) {
           return await response.json();
         } else {
-          const errData = await response.json();
-          throw new Error(errData.error?.message || 'Enhancement failed');
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `Enhancement failed with HTTP ${response.status}`);
         }
-      } catch (err) {
-        console.warn("Backend enhancement failed, falling back to mock provider", err);
+      } catch (err: any) {
+        console.error("Backend prompt enhancement failed:", err);
+        throw new Error(err.message || 'Backend AI Director enhancement service unavailable.');
       }
     }
 
@@ -111,6 +114,7 @@ export class MoviqApiClient {
     let subject = 'Main subject focused in central frame';
     if (lower.includes('bottle')) subject = 'Sleek obsidian perfume bottle with embossed gold typography';
     else if (lower.includes('car')) subject = 'High-performance aerodynamic vehicle with active aerodynamic lights';
+    else if (lower.includes('train')) subject = 'Futuristic high-speed locomotive racing through snow';
     else if (lower.includes('astronaut')) subject = 'Solo explorer wearing tactical deep-space EVA suit';
     else if (lower.includes('warrior')) subject = 'Heroic anime character with glowing energy katana';
     else subject = prompt.split('.')[0] || prompt;
@@ -118,14 +122,16 @@ export class MoviqApiClient {
     let environment = 'Atmospheric studio backdrop with soft volumetric fog';
     if (lower.includes('marble')) environment = 'Wet polished obsidian marble reflecting warm ambient highlights';
     else if (lower.includes('tokyo') || lower.includes('neon')) environment = 'Dystopian rainy metropolis streets bathed in glowing neon signs';
+    else if (lower.includes('snow') || lower.includes('mountain')) environment = 'Snowy mountain valley under bright sunrise with blowing snow particles';
     else if (lower.includes('mars') || lower.includes('dunes')) environment = 'Swirling crimson sand dunes beneath dual celestial moons';
 
     let camera = '35mm anamorphic prime lens with shallow depth of field';
     if (lower.includes('macro') || lower.includes('rotating')) camera = 'Low-angle 360-degree orbital macro tracking shot';
+    else if (lower.includes('aerial') || lower.includes('tracking')) camera = 'Cinematic aerial tracking shot following motion';
 
     let lighting = 'Warm 3200K cinematic spotlight with subtle dust motes';
     if (lower.includes('neon')) lighting = 'High-contrast cyan & magenta neon backlight';
-    else if (lower.includes('golden')) lighting = 'Warm golden hour volumetric rays with specular caustics';
+    else if (lower.includes('sunrise') || lower.includes('golden')) lighting = 'Warm golden hour volumetric rays with specular caustics';
 
     const structuredDirection: StructuredDirection = {
       subject,
@@ -168,8 +174,8 @@ export class MoviqApiClient {
       });
 
       if (!response.ok) {
-        const errorPayload = await response.json();
-        throw new Error(errorPayload.error?.message || 'Failed to submit generation');
+        const errorPayload = await response.json().catch(() => ({}));
+        throw new Error(errorPayload.error?.message || `Failed to submit generation: HTTP ${response.status}`);
       }
 
       const initialStatus: GenerationStatusResponse = await response.json();
@@ -282,8 +288,10 @@ export class MoviqApiClient {
         if (response.ok) {
           return await response.json();
         }
-      } catch (err) {
-        console.warn("Backend history fetch failed, using local mock items", err);
+        throw new Error(`Failed to fetch history: HTTP ${response.status}`);
+      } catch (err: any) {
+        console.error("Backend history fetch failed:", err);
+        throw new Error(`Backend history unavailable: ${err.message}`);
       }
     }
     const items = INITIAL_MOCK_VIDEOS.slice(0, limit);

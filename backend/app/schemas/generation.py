@@ -12,7 +12,7 @@ class CreateGenerationRequest(BaseModel):
     aspect_ratio: AspectRatio = Field(default=AspectRatio.SIXTEEN_NINE, alias="aspectRatio")
     duration: Duration = Duration.FIVE_S
     negative_prompt: Optional[str] = Field(default=None, alias="negativePrompt")
-    model_id: str = Field(default="hunyuan-video-v1", alias="modelId")
+    model_id: str = Field(default="Wan-AI/Wan2.2-TI2V-5B", alias="modelId")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -21,6 +21,7 @@ class GenerationMetadataResponse(BaseModel):
     id: str
     model: str
     provider: str
+    execution_mode: Optional[str] = Field(default="Hosted Inference", alias="executionMode")
     style: StylePreset
     aspect_ratio: AspectRatio = Field(alias="aspectRatio")
     duration: Duration

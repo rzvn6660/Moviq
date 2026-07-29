@@ -40,7 +40,7 @@ export function App() {
 
   // Model Capabilities
   const [models, setModels] = useState<ModelCapability[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState<string>('hunyuan-video-v1');
+  const [selectedModelId, setSelectedModelId] = useState<string>('Wan-AI/Wan2.2-TI2V-5B');
 
   // History & Completed Output
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -68,6 +68,9 @@ export function App() {
   useEffect(() => {
     MoviqApiClient.fetchModelCapabilities().then((loadedModels) => {
       setModels(loadedModels);
+      if (loadedModels.length > 0) {
+        setSelectedModelId(loadedModels[0].id);
+      }
     });
 
     MoviqApiClient.fetchHistory(5).then((data) => {
@@ -139,6 +142,7 @@ export function App() {
       return;
     }
 
+    setCompletedVideo(null);
     setUiState('QUEUED');
 
     try {

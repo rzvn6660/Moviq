@@ -37,7 +37,6 @@ class GenerationService:
     def __init__(self, db: Session):
         self.db = db
         self.repository = GenerationsRepository(db)
-        self.video_provider = get_video_provider()
         self.director_provider = get_director_provider()
 
     async def create_generation(
@@ -56,22 +55,32 @@ class GenerationService:
         if not request.prompt or not request.prompt.strip():
             raise EmptyPromptException()
 
-        # 2. Validate model capabilities
+        # 2. Validate model capabilities & configuration
         model_cap = get_model_capability(request.model_id)
 
-        # 3. Validate aspect ratio
+        # Allow test mock instance override or mock settings
+        provider_instance = getattr(self, "video_provider", None) or get_video_provider(request.model_id)
+
+        if settings.VIDEO_PROVIDER.lower() != "mock" and not getattr(self, "video_provider", None):
+            if not model_cap.configured or not model_cap.is_available:
+                raise ProviderFailureException(
+                    f"Model '{model_cap.name}' is unconfigured or unavailable (Status: {model_cap.status_label}). "
+                    "Please configure valid provider credentials in backend/.env."
+                )
+
+        # 4. Validate aspect ratio
         if request.aspect_ratio not in model_cap.supported_aspect_ratios:
             raise UnsupportedAspectRatioException(request.aspect_ratio.value, request.model_id)
 
-        # 4. Validate duration
+        # 5. Validate duration
         if request.duration not in model_cap.supported_durations:
             raise UnsupportedDurationException(request.duration.value, request.model_id)
 
-        # 5. Validate negative prompt
+        # 6. Validate negative prompt
         if request.negative_prompt and not model_cap.supports_negative_prompt:
             raise NegativePromptNotSupportedException(request.model_id)
 
-        # 6. Auto-enhance prompt if enhanced prompt not explicitly provided
+        # 7. Auto-enhance prompt if enhanced prompt not explicitly provided
         enhanced_prompt = request.enhanced_prompt
         structured_direction = request.structured_direction
 
@@ -80,7 +89,7 @@ class GenerationService:
             enhanced_prompt = enhanced_res.enhanced_prompt
             structured_direction = enhanced_res.structured_direction
 
-        # 7. Create database record with idempotency handling
+        # 8. Create database record with idempotency handling & execution_mode persistence
         gen_id = f"moviq-gen-{uuid.uuid4().hex[:6]}"
         generation = Generation(
             id=gen_id,
@@ -93,6 +102,7 @@ class GenerationService:
             duration=request.duration.value,
             provider=model_cap.provider,
             model_id=model_cap.id,
+            execution_mode=model_cap.execution_mode.value,
             status=GenerationStatus.QUEUED,
         )
         generation.set_structured_direction(structured_direction.model_dump())
@@ -108,9 +118,9 @@ class GenerationService:
                     return await self.get_generation_status(existing.id)
             raise
 
-        # 8. Submit to VideoProvider (Fal or Mock)
+        # 9. Submit to resolved VideoProvider
         try:
-            provider_job_id = await self.video_provider.submit_generation(generation)
+            provider_job_id = await provider_instance.submit_generation(generation)
             generation.provider_job_id = provider_job_id
             self.db.commit()
         except Exception as err:
@@ -150,19 +160,18 @@ class GenerationService:
             GenerationStatus.TIMED_OUT,
         ]:
             try:
-                status, pct = await self.video_provider.check_status(generation.provider_job_id)
+                video_provider = getattr(self, "video_provider", None) or get_video_provider(generation.model_id)
+                status, pct = await video_provider.check_status(generation.provider_job_id)
 
                 if status == GenerationStatus.COMPLETED and not generation.video_url:
-                    # Completion Lifecycle: fal COMPLETED -> Moviq PROCESSING -> retrieve & validate -> Moviq COMPLETED
                     generation.status = GenerationStatus.PROCESSING
                     generation.progress_percentage = 95
                     self.db.commit()
 
                     try:
-                        res = await self.video_provider.get_result(generation.provider_job_id)
+                        res = await video_provider.get_result(generation.provider_job_id)
                         video_url = res.get("video_url", "")
                         
-                        # Strict validation of returned URL (supports external HTTP/HTTPS or backend relative routes)
                         if not video_url or not (video_url.startswith("http://") or video_url.startswith("https://") or video_url.startswith("/api/v1/")):
                             raise FalResultErrorException("Result payload contained invalid video URL")
 
@@ -175,7 +184,7 @@ class GenerationService:
                     except Exception as res_err:
                         logger.error(f"Failed to retrieve or validate result for job '{generation.provider_job_id}': {res_err}")
                         generation.status = GenerationStatus.FAILED
-                        generation.error_code = "FAL_RESULT_ERROR"
+                        generation.error_code = "PROVIDER_RESULT_ERROR"
                         generation.error_message = str(res_err)
 
                 elif status in [GenerationStatus.FAILED, GenerationStatus.TIMED_OUT]:
@@ -191,6 +200,11 @@ class GenerationService:
                 self.db.refresh(generation)
             except Exception as err:
                 logger.error(f"Error checking status for provider job '{generation.provider_job_id}': {err}")
+                generation.status = GenerationStatus.FAILED
+                generation.error_code = getattr(err, "code", "PROVIDER_ERROR")
+                generation.error_message = getattr(err, "message", str(err))
+                self.db.commit()
+                self.db.refresh(generation)
 
         # Map to response schema
         if generation.status == GenerationStatus.COMPLETED:
@@ -232,7 +246,6 @@ class GenerationService:
         if not original:
             raise GenerationNotFoundException(generation_id)
 
-        # Create new generation attempt preserving original settings
         retry_req = CreateGenerationRequest(
             prompt=original.original_prompt,
             enhancedPrompt=original.enhanced_prompt,
@@ -263,7 +276,6 @@ class GenerationService:
         )
         res = await self.create_generation(var_req)
 
-        # Set parent lineage reference
         new_gen = self.repository.get_by_id(res.id)
         if new_gen:
             new_gen.parent_generation_id = original.id
@@ -282,10 +294,18 @@ class GenerationService:
             mood=direction.get("mood", "Sophisticated & modern")
         )
 
+        exec_mode = gen.execution_mode
+        if not exec_mode:
+            try:
+                exec_mode = get_model_capability(gen.model_id).execution_mode.value
+            except Exception:
+                exec_mode = "Hosted Inference"
+
         metadata = GenerationMetadataResponse(
             id=f"meta-{gen.id}",
             model=gen.model_id,
             provider=gen.provider,
+            executionMode=exec_mode,
             style=gen.style,
             aspectRatio=gen.aspect_ratio,
             duration=gen.duration,
@@ -329,7 +349,7 @@ class GenerationService:
         mapping = {
             GenerationStatus.QUEUED: "Analyzing idea",
             GenerationStatus.ENHANCING: "Enhancing direction",
-            GenerationStatus.SUBMITTED: "In Fal Queue",
+            GenerationStatus.SUBMITTED: "In Provider Queue",
             GenerationStatus.GENERATING: "Generating video",
             GenerationStatus.PROCESSING: "Validating output",
             GenerationStatus.COMPLETED: "Generation complete",
@@ -342,8 +362,8 @@ class GenerationService:
         mapping = {
             GenerationStatus.QUEUED: "Deconstructing prompt & lighting parameters",
             GenerationStatus.ENHANCING: "Building AI Director camera keyframes & mood map",
-            GenerationStatus.SUBMITTED: "Job submitted to fal queue worker",
-            GenerationStatus.GENERATING: "Rendering diffusion frames with Kling v2.5 Turbo Pro",
+            GenerationStatus.SUBMITTED: "Job submitted to AI video provider",
+            GenerationStatus.GENERATING: "Rendering video diffusion frames",
             GenerationStatus.PROCESSING: "Retrieving and validating video stream payload",
             GenerationStatus.COMPLETED: "Video rendered and available for playback",
             GenerationStatus.FAILED: "Model provider error",

@@ -29,7 +29,7 @@ async def test_hf_video_provider_missing_token():
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_submission_and_storage(tmp_path):
-    provider = HuggingFaceVideoProvider(token="hf_mock_token_12345", model="Lightricks/LTX-Video")
+    provider = HuggingFaceVideoProvider(token="hf_mock_token_12345", model="Wan-AI/Wan2.2-TI2V-5B")
 
     gen = Generation(
         id="moviq-gen-hf-test-1",
@@ -134,6 +134,54 @@ async def test_hf_video_provider_model_unavailable():
         await asyncio.sleep(0.3)
 
         with pytest.raises(HFModelUnavailableException):
+            await provider.check_status(job_id)
+
+
+@pytest.mark.asyncio
+async def test_hf_video_provider_402_credits_depleted():
+    provider = HuggingFaceVideoProvider(token="valid_token")
+    gen = Generation(id="gen-402-err", original_prompt="test", status=GenerationStatus.QUEUED)
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 402
+    mock_resp.text = '{"error":"You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers."}'
+    err = HfHubHTTPError("Payment required", response=mock_resp)
+
+    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+        mock_instance = MagicMock()
+        mock_instance.text_to_video.side_effect = err
+        mock_client_cls.return_value = mock_instance
+
+        job_id = await provider.submit_generation(gen)
+
+        import asyncio
+        await asyncio.sleep(0.3)
+
+        with pytest.raises(HFInsufficientCreditsException):
+            await provider.check_status(job_id)
+
+
+@pytest.mark.asyncio
+async def test_hf_video_provider_422_unprocessable_entity():
+    provider = HuggingFaceVideoProvider(token="valid_token")
+    gen = Generation(id="gen-422-err", original_prompt="test", status=GenerationStatus.QUEUED)
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 422
+    mock_resp.text = '{"detail":"Unprocessable entity parameter"}'
+    err = HfHubHTTPError("Unprocessable entity", response=mock_resp)
+
+    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+        mock_instance = MagicMock()
+        mock_instance.text_to_video.side_effect = err
+        mock_client_cls.return_value = mock_instance
+
+        job_id = await provider.submit_generation(gen)
+
+        import asyncio
+        await asyncio.sleep(0.3)
+
+        with pytest.raises(HFGenerationFailedException):
             await provider.check_status(job_id)
 
 

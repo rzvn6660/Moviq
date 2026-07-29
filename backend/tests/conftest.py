@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
+import app.db.session as db_session_module
 from app.main import app
 from app.db.base import Base
 from app.db.session import get_db
@@ -19,6 +20,8 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_session_module.engine = engine
+db_session_module.SessionLocal = TestingSessionLocal
 
 
 @pytest.fixture(scope="function", autouse=True)

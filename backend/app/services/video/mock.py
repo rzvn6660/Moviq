@@ -8,8 +8,10 @@ from app.core.exceptions import ProviderFailureException, GenerationTimeoutExcep
 
 
 class MockVideoProvider(VideoProvider):
+    _jobs: Dict[str, Dict[str, Any]] = {}
+
     def __init__(self):
-        self._jobs: Dict[str, Dict[str, Any]] = {}
+        pass
 
     async def submit_generation(self, generation: Generation) -> str:
         job_id = f"job-{generation.id}"
@@ -28,7 +30,7 @@ class MockVideoProvider(VideoProvider):
             initial_status = GenerationStatus.TIMED_OUT
             error_msg = "Simulated video generation execution timeout"
 
-        self._jobs[job_id] = {
+        MockVideoProvider._jobs[job_id] = {
             "generation_id": generation.id,
             "created_at": datetime.now(timezone.utc),
             "status": initial_status,
@@ -47,7 +49,7 @@ class MockVideoProvider(VideoProvider):
         return job_id
 
     async def _simulate_job_lifecycle(self, job_id: str):
-        job = self._jobs.get(job_id)
+        job = MockVideoProvider._jobs.get(job_id)
         if not job or job["should_fail"] or job["should_timeout"]:
             return
 
@@ -69,13 +71,13 @@ class MockVideoProvider(VideoProvider):
         job["progress"] = 100
 
     async def check_status(self, provider_job_id: str) -> Tuple[GenerationStatus, Optional[int]]:
-        job = self._jobs.get(provider_job_id)
+        job = MockVideoProvider._jobs.get(provider_job_id)
         if not job:
             return GenerationStatus.COMPLETED, 100
         return job["status"], job.get("progress")
 
     async def get_result(self, provider_job_id: str) -> Dict[str, Any]:
-        job = self._jobs.get(provider_job_id)
+        job = MockVideoProvider._jobs.get(provider_job_id)
         if job and job["status"] == GenerationStatus.FAILED:
             raise ProviderFailureException("MockVideoProvider", job.get("error_message", "Mock render error"))
         if job and job["status"] == GenerationStatus.TIMED_OUT:

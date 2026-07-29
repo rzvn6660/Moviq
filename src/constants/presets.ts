@@ -64,51 +64,96 @@ export const DURATIONS: Duration[] = ['5s', '10s', '15s'];
 
 export const MOCK_MODEL_CAPABILITIES: ModelCapability[] = [
   {
+    id: 'Wan-AI/Wan2.2-TI2V-5B',
+    name: 'Wan2.2 TI2V 5B (Hugging Face)',
+    provider: 'huggingface',
+    executionMode: 'Hosted Inference',
+    tag: 'Hosted Inference',
+    description: 'Hosted serverless text-to-video model routing via Hugging Face Inference API.',
+    supportedAspectRatios: ['16:9', '1:1'],
+    supportedDurations: ['5s'],
+    supportsNegativePrompt: true,
+    maxDurationSeconds: 5,
+    isAvailable: true,
+    configured: true,
+    statusLabel: 'READY'
+  },
+  {
     id: 'hunyuan-video-v1',
     name: 'Moviq Core (Hunyuan-Video)',
     provider: 'fal-ai',
-    tag: 'Fast & High Fidelity',
+    executionMode: 'Hosted API',
+    tag: 'Hosted Cloud Queue',
     description: 'High-speed open video model with anamorphic depth controls.',
     supportedAspectRatios: ['16:9', '9:16', '1:1'],
     supportedDurations: ['5s', '10s'],
     supportsNegativePrompt: true,
     maxDurationSeconds: 10,
-    isAvailable: true
+    isAvailable: true,
+    configured: true,
+    statusLabel: 'READY'
+  },
+  {
+    id: 'Wan-AI/Wan2.1-T2V-1.3B-Diffusers',
+    name: 'Wan2.1 T2V 1.3B',
+    provider: 'remote_wan',
+    executionMode: 'Self-Hosted GPU',
+    tag: 'Self-Hosted GPU',
+    description: 'Open-source text-to-video model for self-hosted CUDA GPU workers.',
+    supportedAspectRatios: ['16:9', '1:1'],
+    supportedDurations: ['5s'],
+    supportsNegativePrompt: true,
+    maxDurationSeconds: 5,
+    isAvailable: true,
+    configured: true,
+    statusLabel: 'READY'
   },
   {
     id: 'luma-dream-machine',
     name: 'Dream Machine v2.5',
     provider: 'luma-ai',
-    tag: 'Ultra Dynamic Motion',
-    description: 'Physics-informed realistic motion engine with high coherence.',
+    executionMode: 'External Web',
+    tag: 'External API',
+    description: 'Physics-informed realistic motion engine capability.',
     supportedAspectRatios: ['16:9', '9:16'],
     supportedDurations: ['5s', '10s'],
     supportsNegativePrompt: false,
     maxDurationSeconds: 10,
-    isAvailable: true
+    isAvailable: false,
+    configured: false,
+    statusLabel: 'NOT CONFIGURED',
+    externalUrl: 'https://lumalabs.ai/dream-machine'
   },
   {
     id: 'runway-gen3-alpha',
     name: 'Gen-3 Alpha Turbo',
     provider: 'runway',
-    tag: 'Cinematic Framing',
-    description: 'Industry standard video generation with extended 15s clips.',
+    executionMode: 'External Web',
+    tag: 'External API',
+    description: 'Industry standard video generation capability.',
     supportedAspectRatios: ['16:9', '9:16', '1:1'],
     supportedDurations: ['5s', '10s', '15s'],
     supportsNegativePrompt: true,
     maxDurationSeconds: 15,
-    isAvailable: true
+    isAvailable: false,
+    configured: false,
+    statusLabel: 'NOT CONFIGURED',
+    externalUrl: 'https://runwayml.com'
   },
   {
     id: 'pika-v2.0',
     name: 'Pika 2.0 Motion',
     provider: 'pika-labs',
-    tag: 'Stylized Realism',
-    description: 'Specialized stylized rendering for anime and artistic video.',
+    executionMode: 'External Web',
+    tag: 'External API',
+    description: 'Specialized stylized video rendering engine.',
     supportedAspectRatios: ['16:9', '1:1'],
     supportedDurations: ['5s'],
     supportsNegativePrompt: true,
     maxDurationSeconds: 5,
-    isAvailable: true
+    isAvailable: false,
+    configured: false,
+    statusLabel: 'NOT CONFIGURED',
+    externalUrl: 'https://pika.art'
   }
 ];

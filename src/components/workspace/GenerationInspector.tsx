@@ -23,6 +23,7 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
 
   const { metadata } = video;
   const isWan = metadata.provider === 'wan' || metadata.model.includes('Wan');
+  const execMode = metadata.executionMode || 'Hosted Inference';
 
   return (
     <div className="p-4 rounded-xl bg-[#0c1324] border border-[#23293c] space-y-4 text-xs">
@@ -31,9 +32,14 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
           <Info className="w-4 h-4 text-amber-400" />
           <span className="font-semibold text-slate-100 uppercase tracking-wider text-xs">Generation Inspector</span>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono">
-          ID: {video.id}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono">
+            {execMode}
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-[#151b2d] border border-[#23293c] text-slate-400 font-mono">
+            ID: {video.id}
+          </span>
+        </div>
       </div>
 
       {/* Grid of technical rendering metadata */}
@@ -43,15 +49,15 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
           <span className="font-semibold text-slate-200 line-clamp-1">{metadata.model}</span>
         </div>
         <div className="p-2.5 rounded-lg bg-[#151b2d] border border-[#23293c]">
-          <span className="text-[10px] text-slate-400 font-mono block">Provider / Specs</span>
-          <span className="font-semibold text-slate-200">
-            {metadata.provider} ({isWan ? '576×320 | 33 frames' : metadata.resolution})
+          <span className="text-[10px] text-slate-400 font-mono block">Provider / Mode</span>
+          <span className="font-semibold text-slate-200 line-clamp-1">
+            {metadata.provider} • {execMode}
           </span>
         </div>
         <div className="p-2.5 rounded-lg bg-[#151b2d] border border-[#23293c]">
-          <span className="text-[10px] text-slate-400 font-mono block">Duration & FPS</span>
+          <span className="text-[10px] text-slate-400 font-mono block">Duration & Specs</span>
           <span className="font-semibold text-amber-400">
-            {isWan ? '~2.06s (33f)' : metadata.duration} @ {isWan ? 16 : metadata.fps}fps
+            {isWan ? '~2.06s (33f)' : metadata.duration} ({metadata.resolution})
           </span>
         </div>
         <div className="p-2.5 rounded-lg bg-[#151b2d] border border-[#23293c]">
@@ -65,9 +71,9 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
         <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-[11px] text-slate-200">
           <Cpu className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
-            <span className="font-semibold text-amber-400 block">Wan2.1 Open-Source Local GPU Render Profile</span>
+            <span className="font-semibold text-amber-400 block">Wan-AI Open-Source Render Profile</span>
             <span className="text-[10px] text-slate-300 font-mono block">
-              Engine: Wan-AI/Wan2.1-T2V-1.3B-Diffusers | Hardware Profile: Tesla P100 16GB | Precision: FP16 | Steps: 20 | VAE Tiling: Enabled
+              Engine: {metadata.model} | Hardware Profile: Tesla P100 16GB / Serverless | Mode: {execMode}
             </span>
           </div>
         </div>

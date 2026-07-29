@@ -28,7 +28,8 @@ class Generation(Base):
     duration: Mapped[str] = mapped_column(String(16), nullable=False, default="5s")
 
     provider: Mapped[str] = mapped_column(String(32), nullable=False, default="mock")
-    model_id: Mapped[str] = mapped_column(String(64), nullable=False, default="hunyuan-video-v1")
+    model_id: Mapped[str] = mapped_column(String(64), nullable=False, default="Wan-AI/Wan2.2-TI2V-5B")
+    execution_mode: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, default="Hosted Inference")
     provider_job_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
 
     status: Mapped[GenerationStatus] = mapped_column(

@@ -57,7 +57,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       <div className="p-3 rounded-xl bg-[#151b2d] border border-[#23293c] text-left text-xs font-mono text-slate-300">
         <span className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">State Log:</span>
         <p className="text-red-400 font-semibold">{type}</p>
-        <p className="text-[11px] text-slate-400 mt-1">Status Code 503 / Provider Timeout. Fast-retry queue ready.</p>
+        <p className="text-[11px] text-slate-400 mt-1">
+          {errorMessage || (type === 'TIMED_OUT' ? 'Generation process timed out waiting for provider.' : 'Generation ended with state FAILED. Please retry.')}
+        </p>
       </div>
 
       <div className="flex items-center justify-center gap-3 pt-2">

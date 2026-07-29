@@ -2,12 +2,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.core.exceptions import MoviqException
 from app.db.base import Base
-from app.db.session import engine, SessionLocal
+from app import db as db_module
 from app.api.router import api_router
 from app.models.generation import Generation
 from app.schemas.common import GenerationStatus
@@ -20,10 +21,19 @@ async def lifespan(app: FastAPI):
     # Setup logging & Database tables
     setup_logging()
     logger.info("Initializing Moviq database tables...")
-    Base.metadata.create_all(bind=engine)
+    active_engine = db_module.session.engine
+    Base.metadata.create_all(bind=active_engine)
+
+    # Migration check for execution_mode column on SQLite tables
+    try:
+        with active_engine.connect() as conn:
+            conn.execute(text("ALTER TABLE generations ADD COLUMN execution_mode VARCHAR"))
+            conn.commit()
+    except Exception:
+        pass  # Column already exists
 
     # Seed mock history if database is empty
-    db = SessionLocal()
+    db = db_module.session.SessionLocal()
     try:
         count = db.query(Generation).count()
         if count == 0:
@@ -47,6 +57,7 @@ async def lifespan(app: FastAPI):
                     duration="5s",
                     provider="fal-ai",
                     model_id="hunyuan-video-v1",
+                    execution_mode="Hosted API",
                     status=GenerationStatus.COMPLETED,
                     progress_percentage=100,
                     video_url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
@@ -71,6 +82,7 @@ async def lifespan(app: FastAPI):
                     duration="10s",
                     provider="luma-ai",
                     model_id="luma-dream-machine",
+                    execution_mode="External Web",
                     status=GenerationStatus.COMPLETED,
                     progress_percentage=100,
                     video_url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",

@@ -31,7 +31,8 @@ _HF_JOBS: Dict[str, Dict[str, Any]] = {}
 class HuggingFaceVideoProvider(VideoProvider):
     """
     Hugging Face Inference Providers Text-to-Video Provider implementation.
-    Target Model: Lightricks/LTX-Video (or configured model)
+    Default Model: Wan-AI/Wan2.2-TI2V-5B (or configured model)
+    Default Provider: fal-ai (or configured inference provider routing)
     """
 
     def __init__(
@@ -39,16 +40,16 @@ class HuggingFaceVideoProvider(VideoProvider):
         token: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
-        timeout_seconds: float = 60.0,
+        timeout_seconds: float = 120.0,
     ):
         self.token = token if token is not None else settings.HF_TOKEN
         self.model = model or settings.HF_VIDEO_MODEL
-        self.provider = provider or settings.HF_INFERENCE_PROVIDER
+        self.provider = provider or settings.HF_INFERENCE_PROVIDER or "fal-ai"
         self.timeout_seconds = timeout_seconds
 
     def _get_client(self) -> InferenceClient:
-        if not self.token or not self.token.strip():
-            raise HFConfigurationErrorException("HF_TOKEN is not configured on the backend server")
+        if not self.token or not self.token.strip() or self.token.strip() == "your_huggingface_token_here":
+            raise HFConfigurationErrorException("HF_TOKEN is not configured in backend/.env")
         return InferenceClient(
             token=self.token.strip(),
             provider=self.provider,
@@ -71,7 +72,7 @@ class HuggingFaceVideoProvider(VideoProvider):
         prompt_to_use = generation.enhanced_prompt or generation.original_prompt
         negative_prompt = [generation.negative_prompt] if generation.negative_prompt else None
 
-        logger.info(f"Submitting generation '{generation.id}' to Hugging Face model '{self.model}' (job_id='{job_id}')")
+        logger.info(f"Submitting generation '{generation.id}' to Hugging Face provider '{self.provider}', model '{self.model}' (job_id='{job_id}')")
 
         # Execute remote inference asynchronously in thread pool
         asyncio.create_task(
@@ -112,14 +113,17 @@ class HuggingFaceVideoProvider(VideoProvider):
                 raise HFInvalidResultException("Hugging Face API returned empty or non-bytes payload")
 
             # Store generated video bytes safely under backend/generated/
-            generated_dir = os.path.join(os.getcwd(), "generated")
+            generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
             os.makedirs(generated_dir, exist_ok=True)
 
             filename = f"moviq_{generation_id}.mp4"
-            filepath = os.path.join(generated_dir, filename)
+            filepath = os.path.abspath(os.path.join(generated_dir, filename))
 
             with open(filepath, "wb") as f:
                 f.write(video_bytes)
+
+            if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
+                raise HFInvalidResultException("Saved video MP4 is empty or invalid")
 
             elapsed = round(time.time() - start_time, 2)
             logger.info(f"Hugging Face video rendered successfully ({len(video_bytes)} bytes in {elapsed}s): {filepath}")
@@ -134,24 +138,32 @@ class HuggingFaceVideoProvider(VideoProvider):
 
         except HfHubHTTPError as err:
             status_code = getattr(err.response, "status_code", 500)
-            logger.error(f"Hugging Face HTTP error ({status_code}): {err}")
+            err_text = getattr(err.response, "text", str(err))
+            err_text_lower = err_text.lower()
+            logger.error(f"Hugging Face HTTP error ({status_code}): {err_text}")
             
             if status_code in (401, 403):
-                # Distinguish insufficient credits / payment required vs invalid token
-                err_text = getattr(err.response, "text", "").lower()
-                if "credit" in err_text or "payment" in err_text or "quota" in err_text:
-                    exc = HFInsufficientCreditsException("Hugging Face account has insufficient inference credits")
+                if "credit" in err_text_lower or "payment" in err_text_lower or "quota" in err_text_lower or "depleted" in err_text_lower:
+                    exc = HFInsufficientCreditsException(f"Hugging Face account credits depleted or insufficient: {err_text}")
                 else:
-                    exc = HFAuthenticationErrorException()
+                    exc = HFAuthenticationErrorException(f"Hugging Face API token authentication failed: {err_text}")
             elif status_code == 402:
-                exc = HFInsufficientCreditsException()
+                exc = HFInsufficientCreditsException(f"Hugging Face account credits depleted: {err_text}")
+            elif status_code == 422:
+                exc = HFGenerationFailedException(f"Hugging Face provider parameters unprocessable (HTTP 422): {err_text}")
             elif status_code == 429:
-                exc = HFRateLimitedException()
+                exc = HFRateLimitedException("Hugging Face API rate limit exceeded")
             elif status_code in (404, 503):
-                exc = HFModelUnavailableException(f"Model '{self.model}' unavailable: {err}")
+                exc = HFModelUnavailableException(f"Model '{self.model}' or provider '{self.provider}' unavailable: {err_text}")
             else:
-                exc = HFGenerationFailedException(f"Hugging Face HTTP {status_code}: {err}")
+                exc = HFGenerationFailedException(f"Hugging Face HTTP {status_code}: {err_text}")
 
+            _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
+            _HF_JOBS[job_id]["error"] = exc
+
+        except (ValueError, StopIteration) as err:
+            logger.error(f"Hugging Face provider mapping error: {err}")
+            exc = HFModelUnavailableException(f"Model '{self.model}' is not supported by Hugging Face provider routing '{self.provider}'. {err}")
             _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
             _HF_JOBS[job_id]["error"] = exc
 
