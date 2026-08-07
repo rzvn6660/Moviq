@@ -21,7 +21,7 @@ def test_idempotency_duplicate_key(client):
         "style": "Cinematic",
         "aspectRatio": "16:9",
         "duration": "5s",
-        "modelId": "hunyuan-video-v1"
+        "modelId": "Wan-AI/Wan2.2-TI2V-5B"
     }
 
     # First request
@@ -52,7 +52,7 @@ def test_idempotency_different_keys(client):
         "style": "Cinematic",
         "aspectRatio": "16:9",
         "duration": "5s",
-        "modelId": "hunyuan-video-v1"
+        "modelId": "Wan-AI/Wan2.2-TI2V-5B"
     }
 
     res1 = client.post(
@@ -80,7 +80,7 @@ async def test_completion_lifecycle_processing_validated(db_session):
         style="Cinematic",
         aspectRatio="16:9",
         duration="5s",
-        modelId="hunyuan-video-v1"
+        modelId="Wan-AI/Wan2.2-TI2V-5B"
     )
 
     res = await service.create_generation(request=req, idempotency_key="lifecycle-key-1")
@@ -91,7 +91,7 @@ async def test_completion_lifecycle_processing_validated(db_session):
 
     status_res = await service.get_generation_status(gen_id)
     assert status_res.state == GenerationStatus.COMPLETED
-    assert status_res.video.video_url.startswith("http")
+    assert status_res.video.video_url.startswith("http") or status_res.video.video_url.startswith("/api/v1")
 
 
 @pytest.mark.asyncio
@@ -105,7 +105,7 @@ async def test_invalid_result_after_completion(db_session):
         style="Cinematic",
         aspectRatio="16:9",
         duration="5s",
-        modelId="hunyuan-video-v1"
+        modelId="Wan-AI/Wan2.2-TI2V-5B"
     )
 
     # Mock provider returning COMPLETED status but invalid empty video URL

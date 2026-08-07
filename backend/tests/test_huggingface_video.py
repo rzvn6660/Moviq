@@ -21,10 +21,18 @@ from app.core.exceptions import (
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_missing_token():
-    provider = HuggingFaceVideoProvider(token="")
-    gen = Generation(id="gen-test-missing-token", original_prompt="test", status=GenerationStatus.QUEUED)
-    with pytest.raises(HFConfigurationErrorException):
-        await provider.submit_generation(gen)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    orig_prov = settings.VIDEO_PROVIDER
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    settings.VIDEO_PROVIDER = "huggingface"
+    try:
+        provider = HuggingFaceVideoProvider(token="")
+        gen = Generation(id="gen-test-missing-token", original_prompt="test", status=GenerationStatus.QUEUED)
+        with pytest.raises(HFConfigurationErrorException):
+            await provider.submit_generation(gen)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
+        settings.VIDEO_PROVIDER = orig_prov
 
 
 @pytest.mark.asyncio
@@ -67,122 +75,147 @@ async def test_hf_video_provider_submission_and_storage(tmp_path):
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_auth_error():
-    provider = HuggingFaceVideoProvider(token="invalid_hf_token")
-    gen = Generation(id="gen-auth-err", original_prompt="test", status=GenerationStatus.QUEUED)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    try:
+        provider = HuggingFaceVideoProvider(token="invalid_hf_token")
+        gen = Generation(id="gen-auth-err", original_prompt="test", status=GenerationStatus.QUEUED)
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 401
-    mock_resp.text = "Unauthorized token"
-    err = HfHubHTTPError("Invalid token", response=mock_resp)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 401
+        mock_resp.text = "Unauthorized token"
+        err = HfHubHTTPError("Invalid token", response=mock_resp)
 
-    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.text_to_video.side_effect = err
-        mock_client_cls.return_value = mock_instance
+        with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+            mock_instance = MagicMock()
+            mock_instance.text_to_video.side_effect = err
+            mock_client_cls.return_value = mock_instance
 
-        job_id = await provider.submit_generation(gen)
+            job_id = await provider.submit_generation(gen)
 
-        import asyncio
-        await asyncio.sleep(0.3)
+            import asyncio
+            await asyncio.sleep(0.3)
 
-        with pytest.raises(HFAuthenticationErrorException):
-            await provider.check_status(job_id)
+            with pytest.raises(HFAuthenticationErrorException):
+                await provider.check_status(job_id)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
 
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_insufficient_credits():
-    provider = HuggingFaceVideoProvider(token="valid_token")
-    gen = Generation(id="gen-credits-err", original_prompt="test", status=GenerationStatus.QUEUED)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    try:
+        provider = HuggingFaceVideoProvider(token="valid_token")
+        gen = Generation(id="gen-credits-err", original_prompt="test", status=GenerationStatus.QUEUED)
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 403
-    mock_resp.text = "You need an active subscription or credits for this endpoint"
-    err = HfHubHTTPError("Payment required", response=mock_resp)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 403
+        mock_resp.text = "You need an active subscription or credits for this endpoint"
+        err = HfHubHTTPError("Payment required", response=mock_resp)
 
-    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.text_to_video.side_effect = err
-        mock_client_cls.return_value = mock_instance
+        with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+            mock_instance = MagicMock()
+            mock_instance.text_to_video.side_effect = err
+            mock_client_cls.return_value = mock_instance
 
-        job_id = await provider.submit_generation(gen)
+            job_id = await provider.submit_generation(gen)
 
-        import asyncio
-        await asyncio.sleep(0.3)
+            import asyncio
+            await asyncio.sleep(0.3)
 
-        with pytest.raises(HFInsufficientCreditsException):
-            await provider.check_status(job_id)
+            with pytest.raises(HFInsufficientCreditsException):
+                await provider.check_status(job_id)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
 
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_model_unavailable():
-    provider = HuggingFaceVideoProvider(token="valid_token")
-    gen = Generation(id="gen-model-unavail", original_prompt="test", status=GenerationStatus.QUEUED)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    try:
+        provider = HuggingFaceVideoProvider(token="valid_token")
+        gen = Generation(id="gen-model-unavail", original_prompt="test", status=GenerationStatus.QUEUED)
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 503
-    mock_resp.text = "Model loading or unavailable"
-    err = HfHubHTTPError("Model unavailable", response=mock_resp)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.text = "Model loading or unavailable"
+        err = HfHubHTTPError("Model unavailable", response=mock_resp)
 
-    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.text_to_video.side_effect = err
-        mock_client_cls.return_value = mock_instance
+        with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+            mock_instance = MagicMock()
+            mock_instance.text_to_video.side_effect = err
+            mock_client_cls.return_value = mock_instance
 
-        job_id = await provider.submit_generation(gen)
+            job_id = await provider.submit_generation(gen)
 
-        import asyncio
-        await asyncio.sleep(0.3)
+            import asyncio
+            await asyncio.sleep(0.3)
 
-        with pytest.raises(HFModelUnavailableException):
-            await provider.check_status(job_id)
+            with pytest.raises(HFModelUnavailableException):
+                await provider.check_status(job_id)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
 
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_402_credits_depleted():
-    provider = HuggingFaceVideoProvider(token="valid_token")
-    gen = Generation(id="gen-402-err", original_prompt="test", status=GenerationStatus.QUEUED)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    try:
+        provider = HuggingFaceVideoProvider(token="valid_token")
+        gen = Generation(id="gen-402-err", original_prompt="test", status=GenerationStatus.QUEUED)
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 402
-    mock_resp.text = '{"error":"You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers."}'
-    err = HfHubHTTPError("Payment required", response=mock_resp)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 402
+        mock_resp.text = '{"error":"You have depleted your monthly included credits. Purchase pre-paid credits to continue using Inference Providers."}'
+        err = HfHubHTTPError("Payment required", response=mock_resp)
 
-    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.text_to_video.side_effect = err
-        mock_client_cls.return_value = mock_instance
+        with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+            mock_instance = MagicMock()
+            mock_instance.text_to_video.side_effect = err
+            mock_client_cls.return_value = mock_instance
 
-        job_id = await provider.submit_generation(gen)
+            job_id = await provider.submit_generation(gen)
 
-        import asyncio
-        await asyncio.sleep(0.3)
+            import asyncio
+            await asyncio.sleep(0.3)
 
-        with pytest.raises(HFInsufficientCreditsException):
-            await provider.check_status(job_id)
+            with pytest.raises(HFInsufficientCreditsException):
+                await provider.check_status(job_id)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
 
 
 @pytest.mark.asyncio
 async def test_hf_video_provider_422_unprocessable_entity():
-    provider = HuggingFaceVideoProvider(token="valid_token")
-    gen = Generation(id="gen-422-err", original_prompt="test", status=GenerationStatus.QUEUED)
+    orig_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    settings.ENABLE_SYNTHETIC_FALLBACK = False
+    try:
+        provider = HuggingFaceVideoProvider(token="valid_token")
+        gen = Generation(id="gen-422-err", original_prompt="test", status=GenerationStatus.QUEUED)
 
-    mock_resp = MagicMock()
-    mock_resp.status_code = 422
-    mock_resp.text = '{"detail":"Unprocessable entity parameter"}'
-    err = HfHubHTTPError("Unprocessable entity", response=mock_resp)
+        mock_resp = MagicMock()
+        mock_resp.status_code = 422
+        mock_resp.text = '{"detail":"Unprocessable entity parameter"}'
+        err = HfHubHTTPError("Unprocessable entity", response=mock_resp)
 
-    with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
-        mock_instance = MagicMock()
-        mock_instance.text_to_video.side_effect = err
-        mock_client_cls.return_value = mock_instance
+        with patch("app.services.video.huggingface.InferenceClient") as mock_client_cls:
+            mock_instance = MagicMock()
+            mock_instance.text_to_video.side_effect = err
+            mock_client_cls.return_value = mock_instance
 
-        job_id = await provider.submit_generation(gen)
+            job_id = await provider.submit_generation(gen)
 
-        import asyncio
-        await asyncio.sleep(0.3)
+            import asyncio
+            await asyncio.sleep(0.3)
 
-        with pytest.raises(HFGenerationFailedException):
-            await provider.check_status(job_id)
+            with pytest.raises(HFGenerationFailedException):
+                await provider.check_status(job_id)
+    finally:
+        settings.ENABLE_SYNTHETIC_FALLBACK = orig_synth
 
 
 def test_hf_factory_selection():
@@ -194,9 +227,9 @@ def test_hf_factory_selection():
     p_mock = get_video_provider()
     assert "Mock" in p_mock.__class__.__name__
 
-    settings.VIDEO_PROVIDER = "fal"
-    p_fal = get_video_provider()
-    assert "Fal" in p_fal.__class__.__name__
+    settings.VIDEO_PROVIDER = "kie"
+    p_kie = get_video_provider()
+    assert "Kie" in p_kie.__class__.__name__
 
     settings.VIDEO_PROVIDER = "mock"
 

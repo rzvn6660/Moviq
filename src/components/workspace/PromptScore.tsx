@@ -21,7 +21,7 @@ export const PromptScore: React.FC<PromptScoreProps> = ({ analysis }) => {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Gauge className="w-4 h-4 text-amber-400" />
-          <span className="font-medium text-slate-200">Prompt Score</span>
+          <span className="font-medium text-slate-200">Prompt Detail Score <span className="text-[10px] text-slate-400 font-mono font-normal">(Heuristic)</span></span>
           <span
             className="px-2 py-0.5 rounded-full text-[10px] font-medium border border-amber-500/20 bg-amber-500/10 text-amber-400"
           >

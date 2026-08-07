@@ -6,7 +6,7 @@ def test_recent_history_default_five(client):
             "style": "Cinematic",
             "aspectRatio": "16:9",
             "duration": "5s",
-            "modelId": "hunyuan-video-v1"
+            "modelId": "kling-3.0/video"
         })
 
     # Default query (no limit parameter passed)

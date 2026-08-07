@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 from app.schemas.model_capability import ModelCapability, ExecutionMode
 from app.schemas.common import AspectRatio, Duration
@@ -7,32 +8,80 @@ from app.core.config import settings
 
 RAW_MODEL_DEFINITIONS: List[dict] = [
     {
-        "id": "Wan-AI/Wan2.2-TI2V-5B",
-        "name": "Wan2.2 TI2V 5B (Hugging Face)",
-        "provider": "huggingface",
-        "execution_mode": ExecutionMode.HOSTED_INFERENCE,
-        "tag": "Hosted Inference",
-        "description": "Hosted serverless text-to-video model routing via Hugging Face Inference API (fal-ai provider).",
-        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.ONE_ONE],
-        "supported_durations": [Duration.FIVE_S],
-        "supports_negative_prompt": True,
-        "max_duration_seconds": 5,
-    },
-    {
-        "id": "hunyuan-video-v1",
-        "name": "Moviq Core (Hunyuan-Video)",
-        "provider": "fal-ai",
+        "id": "kling-3.0/video",
+        "name": "Kling 3.0 Pro (Kie.ai)",
+        "provider": "kie",
         "execution_mode": ExecutionMode.HOSTED_API,
-        "tag": "Hosted Cloud Queue",
-        "description": "High-speed open video model with anamorphic depth controls.",
+        "tag": "Production Hosted",
+        "description": "State-of-the-art cinematic text-to-video model routed via Kie.ai unified provider.",
         "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
         "supported_durations": [Duration.FIVE_S, Duration.TEN_S],
         "supports_negative_prompt": True,
         "max_duration_seconds": 10,
     },
     {
+        "id": "wan-2.1/video",
+        "name": "Wan 2.1 T2V (Kie.ai)",
+        "provider": "kie",
+        "execution_mode": ExecutionMode.HOSTED_API,
+        "tag": "Production Hosted",
+        "description": "High-fidelity open text-to-video model hosted on Kie.ai backend.",
+        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.ONE_ONE],
+        "supported_durations": [Duration.FIVE_S],
+        "supports_negative_prompt": True,
+        "max_duration_seconds": 5,
+    },
+    {
+        "id": "veo-3.1",
+        "name": "Google Veo 3.1 (Kie.ai)",
+        "provider": "kie",
+        "execution_mode": ExecutionMode.HOSTED_API,
+        "tag": "Cinematic Ultra",
+        "description": "Google Veo 3.1 1080p photorealistic video generation via Kie.ai.",
+        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
+        "supported_durations": [Duration.FIVE_S, Duration.TEN_S],
+        "supports_negative_prompt": False,
+        "max_duration_seconds": 10,
+    },
+    {
+        "id": "dream-machine",
+        "name": "Dream Machine (Luma AI)",
+        "provider": "luma",
+        "execution_mode": ExecutionMode.HOSTED_API,
+        "tag": "Luma Engine",
+        "description": "Physics-informed realistic camera motion engine via Luma AI REST API.",
+        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
+        "supported_durations": [Duration.FIVE_S],
+        "supports_negative_prompt": False,
+        "max_duration_seconds": 5,
+    },
+    {
+        "id": "hailuo-01",
+        "name": "MiniMax Video 01 (Hailuo AI)",
+        "provider": "hailuo",
+        "execution_mode": ExecutionMode.HOSTED_API,
+        "tag": "MiniMax Engine",
+        "description": "MiniMax Hailuo high-motion synthesis engine via MiniMax REST API.",
+        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
+        "supported_durations": [Duration.FIVE_S],
+        "supports_negative_prompt": True,
+        "max_duration_seconds": 6,
+    },
+    {
+        "id": "Wan-AI/Wan2.2-TI2V-5B",
+        "name": "Wan2.2 TI2V 5B (Hugging Face)",
+        "provider": "huggingface",
+        "execution_mode": ExecutionMode.HOSTED_INFERENCE,
+        "tag": "Hosted Inference",
+        "description": "Hosted serverless text-to-video model routing via Hugging Face Inference API.",
+        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.ONE_ONE],
+        "supported_durations": [Duration.FIVE_S],
+        "supports_negative_prompt": True,
+        "max_duration_seconds": 5,
+    },
+    {
         "id": "Wan-AI/Wan2.1-T2V-1.3B-Diffusers",
-        "name": "Wan2.1 T2V 1.3B",
+        "name": "Wan2.1 T2V 1.3B (Remote GPU)",
         "provider": "remote_wan",
         "execution_mode": ExecutionMode.SELF_HOSTED,
         "tag": "Self-Hosted GPU",
@@ -44,55 +93,16 @@ RAW_MODEL_DEFINITIONS: List[dict] = [
         "render_profile_description": "576×320 | 33 frames @ 16 FPS (~2.06s render)",
     },
     {
-        "id": "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
-        "name": "Kling 2.5 Turbo Pro",
-        "provider": "fal-ai",
-        "execution_mode": ExecutionMode.HOSTED_API,
-        "tag": "Production Cinematic",
-        "description": "State-of-the-art text-to-video synthesis engine via fal-ai queue.",
+        "id": "ltx-video",
+        "name": "LTX Video 0.9 (Lightricks Local)",
+        "provider": "ltx",
+        "execution_mode": ExecutionMode.SELF_HOSTED,
+        "tag": "Local Inference",
+        "description": "Local PyTorch real-time video diffusion engine.",
         "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
-        "supported_durations": [Duration.FIVE_S, Duration.TEN_S],
-        "supports_negative_prompt": True,
-        "max_duration_seconds": 10,
-    },
-    {
-        "id": "luma-dream-machine",
-        "name": "Dream Machine v2.5",
-        "provider": "luma-ai",
-        "execution_mode": ExecutionMode.EXTERNAL_WEB,
-        "tag": "External API",
-        "description": "Physics-informed realistic motion engine capability.",
-        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN],
-        "supported_durations": [Duration.FIVE_S, Duration.TEN_S],
-        "supports_negative_prompt": False,
-        "max_duration_seconds": 10,
-        "external_url": "https://lumalabs.ai/dream-machine",
-    },
-    {
-        "id": "runway-gen3-alpha",
-        "name": "Gen-3 Alpha Turbo",
-        "provider": "runway",
-        "execution_mode": ExecutionMode.EXTERNAL_WEB,
-        "tag": "External API",
-        "description": "Industry standard video generation capability.",
-        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.NINE_SIXTEEN, AspectRatio.ONE_ONE],
-        "supported_durations": [Duration.FIVE_S, Duration.TEN_S, Duration.FIFTEEN_S],
-        "supports_negative_prompt": True,
-        "max_duration_seconds": 15,
-        "external_url": "https://runwayml.com",
-    },
-    {
-        "id": "pika-v2.0",
-        "name": "Pika 2.0 Motion",
-        "provider": "pika-labs",
-        "execution_mode": ExecutionMode.EXTERNAL_WEB,
-        "tag": "External API",
-        "description": "Specialized stylized video rendering engine.",
-        "supported_aspect_ratios": [AspectRatio.SIXTEEN_NINE, AspectRatio.ONE_ONE],
         "supported_durations": [Duration.FIVE_S],
         "supports_negative_prompt": True,
         "max_duration_seconds": 5,
-        "external_url": "https://pika.art",
     }
 ]
 
@@ -109,8 +119,32 @@ def get_all_models() -> List[ModelCapability]:
             m.is_available = True
             m.status_label = "READY"
         else:
-            # Dynamic runtime configuration evaluation for real execution
-            if m.provider == "huggingface":
+            # Dynamic runtime configuration evaluation for v2.0 real execution
+            if m.provider == "kie":
+                key_valid = bool(
+                    settings.KIE_API_KEY
+                    and settings.KIE_API_KEY.strip()
+                    and settings.KIE_API_KEY != "your_kie_api_key_here"
+                )
+                m.configured = key_valid
+                m.is_available = key_valid
+                m.status_label = "READY" if key_valid else "NOT AVAILABLE"
+
+            elif m.provider == "luma":
+                luma_key = os.getenv("LUMA_API_KEY") or getattr(settings, "LUMA_API_KEY", "")
+                key_valid = bool(luma_key and luma_key.strip())
+                m.configured = key_valid
+                m.is_available = key_valid
+                m.status_label = "READY" if key_valid else "NOT AVAILABLE"
+
+            elif m.provider == "hailuo":
+                hailuo_key = os.getenv("HAILUO_API_KEY") or os.getenv("MINIMAX_API_KEY") or getattr(settings, "HAILUO_API_KEY", "")
+                key_valid = bool(hailuo_key and hailuo_key.strip())
+                m.configured = key_valid
+                m.is_available = key_valid
+                m.status_label = "READY" if key_valid else "NOT AVAILABLE"
+
+            elif m.provider == "huggingface":
                 token_valid = bool(
                     settings.HF_TOKEN
                     and settings.HF_TOKEN.strip()
@@ -118,38 +152,29 @@ def get_all_models() -> List[ModelCapability]:
                 )
                 m.configured = token_valid
                 m.is_available = token_valid
-                m.status_label = "READY" if token_valid else "NOT CONFIGURED"
+                m.status_label = "READY" if token_valid else "NOT AVAILABLE"
 
-            elif m.provider == "fal-ai":
-                key_valid = bool(
-                    settings.FAL_KEY
-                    and settings.FAL_KEY.strip()
-                    and settings.FAL_KEY != "your_fal_api_key_here"
-                )
-                m.configured = key_valid
-                m.is_available = key_valid
-                m.status_label = "READY" if key_valid else "NOT CONFIGURED"
-
-            elif m.provider in ("remote_wan", "wan"):
+            elif m.provider == "remote_wan":
                 url_valid = bool(
                     settings.REMOTE_WAN_URL
                     and settings.REMOTE_WAN_URL.strip()
                     and settings.REMOTE_WAN_URL != "http://localhost:8002"
                 )
-                key_valid = bool(
-                    settings.REMOTE_WAN_API_KEY
-                    and settings.REMOTE_WAN_API_KEY.strip()
-                    and settings.REMOTE_WAN_API_KEY != "your_remote_wan_api_key_here"
-                )
-                is_ready = url_valid and key_valid
+                is_ready = url_valid
                 m.configured = is_ready
                 m.is_available = is_ready
-                m.status_label = "READY" if is_ready else "NOT CONFIGURED"
+                m.status_label = "READY" if is_ready else "NOT AVAILABLE"
+
+            elif m.provider == "ltx":
+                # LTX is ready locally if PyTorch/CUDA or synthetic fallback mode is active
+                m.configured = True
+                m.is_available = True
+                m.status_label = "READY"
 
             else:
                 m.configured = False
                 m.is_available = False
-                m.status_label = "NOT CONFIGURED"
+                m.status_label = "NOT AVAILABLE"
 
         models.append(m)
 

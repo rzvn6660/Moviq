@@ -1,3 +1,4 @@
+import os
 import asyncio
 from typing import Tuple, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -5,6 +6,7 @@ from app.services.video.base import VideoProvider
 from app.models.generation import Generation
 from app.schemas.common import GenerationStatus
 from app.core.exceptions import ProviderFailureException, GenerationTimeoutException
+from app.utils.video_validator import generate_synthetic_mp4
 
 
 class MockVideoProvider(VideoProvider):
@@ -16,6 +18,7 @@ class MockVideoProvider(VideoProvider):
     async def submit_generation(self, generation: Generation) -> str:
         job_id = f"job-{generation.id}"
         
+        prompt_to_use = generation.enhanced_prompt or generation.original_prompt
         prompt_lower = generation.original_prompt.lower()
         should_fail = "fail_trigger" in prompt_lower or "force_fail" in prompt_lower
         should_timeout = "timeout_trigger" in prompt_lower or "force_timeout" in prompt_lower
@@ -32,6 +35,7 @@ class MockVideoProvider(VideoProvider):
 
         MockVideoProvider._jobs[job_id] = {
             "generation_id": generation.id,
+            "prompt": prompt_to_use,
             "created_at": datetime.now(timezone.utc),
             "status": initial_status,
             "progress": 0 if not (should_fail or should_timeout) else None,
@@ -66,6 +70,13 @@ class MockVideoProvider(VideoProvider):
         job["status"] = GenerationStatus.PROCESSING
         job["progress"] = 90
 
+        generation_id = job["generation_id"]
+        generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+        os.makedirs(generated_dir, exist_ok=True)
+        filepath = os.path.abspath(os.path.join(generated_dir, f"moviq_{generation_id}.mp4"))
+
+        generate_synthetic_mp4(filepath=filepath, prompt=job.get("prompt", "Synthetic Video Prompt"), duration_sec=5.0)
+
         await asyncio.sleep(0.1)
         job["status"] = GenerationStatus.COMPLETED
         job["progress"] = 100
@@ -74,6 +85,18 @@ class MockVideoProvider(VideoProvider):
         job = MockVideoProvider._jobs.get(provider_job_id)
         if not job:
             return GenerationStatus.COMPLETED, 100
+
+        if not job.get("should_fail") and not job.get("should_timeout"):
+            generation_id = job["generation_id"]
+            generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+            os.makedirs(generated_dir, exist_ok=True)
+            filepath = os.path.abspath(os.path.join(generated_dir, f"moviq_{generation_id}.mp4"))
+            if not os.path.exists(filepath):
+                generate_synthetic_mp4(filepath=filepath, prompt=job.get("prompt", "Synthetic Video Prompt"), duration_sec=5.0)
+
+            job["status"] = GenerationStatus.COMPLETED
+            job["progress"] = 100
+
         return job["status"], job.get("progress")
 
     async def get_result(self, provider_job_id: str) -> Dict[str, Any]:
@@ -83,8 +106,11 @@ class MockVideoProvider(VideoProvider):
         if job and job["status"] == GenerationStatus.TIMED_OUT:
             raise GenerationTimeoutException(job.get("generation_id", provider_job_id))
 
+        gen_id = job["generation_id"] if job else provider_job_id
         return {
-            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-            "thumbnail_url": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
-            "generation_time_seconds": 4.8
+            "video_url": f"/api/v1/generations/{gen_id}/video",
+            "thumbnail_url": "",
+            "generation_time_seconds": 4.8,
+            "is_synthetic": True
         }
+

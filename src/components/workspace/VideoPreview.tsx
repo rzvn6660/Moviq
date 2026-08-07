@@ -3,6 +3,7 @@ import type { UIState, VideoItem, GenerationProgressStep, GenerationProgressInfo
 import { GenerationProgress } from './GenerationProgress';
 import { GenerationInspector } from './GenerationInspector';
 import { ErrorState } from './ErrorState';
+import { resolveMediaUrl, triggerFileDownload } from '../../utils/formatters';
 import {
   Play,
   Pause,
@@ -14,7 +15,8 @@ import {
   Maximize2,
   Film,
   Zap,
-  Sliders
+  Sliders,
+  Star
 } from 'lucide-react';
 
 interface VideoPreviewProps {
@@ -26,7 +28,15 @@ interface VideoPreviewProps {
   onRegenerate: () => void;
   onCreateVariation: () => void;
   onReuseSettings: () => void;
+  onToggleFavorite?: (video: VideoItem) => void;
 }
+
+const resolveVideoUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const backendBase = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001/api/v1').replace(/\/api\/v1\/?$/, '');
+  return `${backendBase}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 export const VideoPreview: React.FC<VideoPreviewProps> = ({
   uiState,
@@ -37,6 +47,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   onRegenerate,
   onCreateVariation,
   onReuseSettings,
+  onToggleFavorite,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -47,7 +58,33 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
-  }, [completedVideo, uiState]);
+    if (videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }, [completedVideo?.id, uiState]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === 'f' || e.key === 'F') &&
+        completedVideo &&
+        onToggleFavorite &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        onToggleFavorite(completedVideo);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [completedVideo, onToggleFavorite]);
+
+  const handleLoadedMetadata = () => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration || 0);
+    }
+  };
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -89,14 +126,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!completedVideo) return;
-    const a = document.createElement('a');
-    a.href = completedVideo.videoUrl;
-    a.download = `${completedVideo.id}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const downloadEndpoint = resolveMediaUrl(`/api/v1/generations/${completedVideo.id}/download`);
+    await triggerFileDownload(downloadEndpoint, `moviq-${completedVideo.id}.mp4`);
   };
 
   const formatTime = (secs: number) => {
@@ -194,9 +227,12 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         {uiState === 'COMPLETED' && completedVideo && (
           <div className="relative w-full h-full flex flex-col items-center justify-center group">
             <video
+              key={completedVideo.id}
               ref={videoRef}
-              src={completedVideo.videoUrl}
-              poster={completedVideo.thumbnailUrl}
+              src={resolveVideoUrl(completedVideo.videoUrl)}
+              poster={completedVideo.thumbnailUrl && !completedVideo.thumbnailUrl.includes('photo-1592945403244') ? completedVideo.thumbnailUrl : undefined}
+              autoPlay
+              onLoadedMetadata={handleLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
               onEnded={() => setIsPlaying(false)}
               loop
@@ -281,6 +317,21 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-[#0c1324] border border-[#23293c]">
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onToggleFavorite && onToggleFavorite(completedVideo)}
+                aria-label={completedVideo.isFavorite ? "Remove from Favorites (Press F)" : "Add to Favorites (Press F)"}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                  completedVideo.isFavorite
+                    ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/20'
+                    : 'bg-[#151b2d] hover:bg-[#191f31] border border-[#23293c] text-slate-300 hover:text-amber-400'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${completedVideo.isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} aria-hidden="true" />
+                <span>{completedVideo.isFavorite ? 'Favorited' : 'Favorite'}</span>
+                <span className="text-[10px] px-1 rounded bg-slate-900/80 text-slate-400 font-mono">F</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleDownload}

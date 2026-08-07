@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { VideoItem } from '../../types/video';
 import { Info, Copy, Check, Sparkles, Cpu } from 'lucide-react';
+import { GenerationTimeline } from './GenerationTimeline';
 
 interface GenerationInspectorProps {
   video: VideoItem;
@@ -24,6 +25,8 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
   const { metadata } = video;
   const isWan = metadata.provider === 'wan' || metadata.model.includes('Wan');
   const execMode = metadata.executionMode || 'Hosted Inference';
+  const isSynthetic = video.isSynthetic || metadata.isSynthetic || metadata.provider === 'mock';
+  const providerDisplayName = metadata.provider === 'kie' ? 'Kie.ai' : metadata.provider === 'huggingface' ? 'Hugging Face' : metadata.provider === 'fal' ? 'Fal.ai' : metadata.provider === 'remote_wan' ? 'Remote Wan2.1' : metadata.provider;
 
   return (
     <div className="p-4 rounded-xl bg-[#0c1324] border border-[#23293c] space-y-4 text-xs">
@@ -33,6 +36,26 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
           <span className="font-semibold text-slate-100 uppercase tracking-wider text-xs">Generation Inspector</span>
         </div>
         <div className="flex items-center gap-2">
+          {isSynthetic ? (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 font-mono font-semibold flex items-center gap-1">
+              Synthetic Preview
+            </span>
+          ) : (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-semibold flex items-center gap-1">
+              AI Generated ({providerDisplayName})
+            </span>
+          )}
+          {video.fidelityLabel && (
+            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold ${
+              video.fidelityLabel.includes('Low')
+                ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                : video.fidelityLabel.includes('Moderate')
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+            }`}>
+              Fidelity: {video.fidelityLabel} ({Math.round((video.fidelityScore || 0.92) * 100)}%)
+            </span>
+          )}
           <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono">
             {execMode}
           </span>
@@ -49,9 +72,9 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
           <span className="font-semibold text-slate-200 line-clamp-1">{metadata.model}</span>
         </div>
         <div className="p-2.5 rounded-lg bg-[#151b2d] border border-[#23293c]">
-          <span className="text-[10px] text-slate-400 font-mono block">Provider / Mode</span>
-          <span className="font-semibold text-slate-200 line-clamp-1">
-            {metadata.provider} • {execMode}
+          <span className="text-[10px] text-slate-400 font-mono block">Video Source Type</span>
+          <span className={`font-semibold line-clamp-1 ${isSynthetic ? 'text-indigo-300' : 'text-emerald-300'}`}>
+            {isSynthetic ? 'Synthetic Preview' : `AI Generated (${providerDisplayName})`}
           </span>
         </div>
         <div className="p-2.5 rounded-lg bg-[#151b2d] border border-[#23293c]">
@@ -111,6 +134,11 @@ export const GenerationInspector: React.FC<GenerationInspectorProps> = ({ video 
           </div>
           <p className="text-slate-200 text-[11px] leading-relaxed">{video.enhancedPrompt}</p>
         </div>
+      </div>
+
+      {/* Generation Lifecycle Timeline & Observability Panel */}
+      <div className="pt-2">
+        <GenerationTimeline generationId={video.id} />
       </div>
     </div>
   );

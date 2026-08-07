@@ -7,7 +7,7 @@ def test_create_and_retrieve_generation_lifecycle(client):
         "style": "Cinematic",
         "aspectRatio": "16:9",
         "duration": "5s",
-        "modelId": "hunyuan-video-v1"
+        "modelId": "Wan-AI/Wan2.2-TI2V-5B"
     }
 
     # 1. Submit creation request
@@ -41,7 +41,7 @@ def test_retry_and_variation_generation(client):
         "style": "Realistic",
         "aspectRatio": "16:9",
         "duration": "5s",
-        "modelId": "hunyuan-video-v1"
+        "modelId": "Wan-AI/Wan2.2-TI2V-5B"
     }
 
     initial_res = client.post("/api/v1/generations", json=payload)

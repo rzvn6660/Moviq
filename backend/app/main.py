@@ -24,75 +24,37 @@ async def lifespan(app: FastAPI):
     active_engine = db_module.session.engine
     Base.metadata.create_all(bind=active_engine)
 
-    # Migration check for execution_mode column on SQLite tables
+    # Migration check for execution_mode, is_favorite, and favorite_at columns on SQLite tables
     try:
         with active_engine.connect() as conn:
-            conn.execute(text("ALTER TABLE generations ADD COLUMN execution_mode VARCHAR"))
+            try:
+                conn.execute(text("ALTER TABLE generations ADD COLUMN execution_mode VARCHAR"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE generations ADD COLUMN is_favorite BOOLEAN DEFAULT 0"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE generations ADD COLUMN favorite_at DATETIME"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE generations ADD COLUMN fidelity_score FLOAT DEFAULT 0.92"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE generations ADD COLUMN fidelity_label VARCHAR DEFAULT 'High Fidelity'"))
+            except Exception:
+                pass
             conn.commit()
     except Exception:
-        pass  # Column already exists
+        pass  # Column already exists or migration non-critical
 
-    # Seed mock history if database is empty
+    # Initialize database session
     db = db_module.session.SessionLocal()
     try:
-        count = db.query(Generation).count()
-        if count == 0:
-            logger.info("Seeding initial mock generations into database...")
-            mock_seed = [
-                Generation(
-                    id="moviq-gen-8812",
-                    original_prompt="A luxury perfume bottle rotating on black marble with warm golden lighting.",
-                    enhanced_prompt="Cinematic commercial macro shot of a sleek obsidian perfume bottle with embossed gold typography, spinning smoothly on wet black marble. Volumetric warm tungsten spotlighting casts sharp golden caustics and subtle dust particles hovering in the atmosphere. 35mm film grain, anamorphic lens flare, 60fps slow motion.",
-                    negative_prompt="blurry, oversaturated, low quality, jittery motion",
-                    structured_direction_json=json.dumps({
-                        "subject": "Obsidian perfume bottle with gold embossed branding",
-                        "environment": "Wet black polished marble reflecting warm light reflections",
-                        "action": "Smooth 360-degree rotation with subtle floating dust particles",
-                        "camera": "Low-angle macro 35mm anamorphic tracking camera",
-                        "lighting": "Warm 3200K volumetric spot with high caustics contrast",
-                        "mood": "Sophisticated, luxurious, high-fashion commercial"
-                    }),
-                    style="Cinematic",
-                    aspect_ratio="16:9",
-                    duration="5s",
-                    provider="fal-ai",
-                    model_id="hunyuan-video-v1",
-                    execution_mode="Hosted API",
-                    status=GenerationStatus.COMPLETED,
-                    progress_percentage=100,
-                    video_url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-                    thumbnail_url="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
-                    generation_time_seconds=8.4,
-                    created_at=datetime.now(timezone.utc)
-                ),
-                Generation(
-                    id="moviq-gen-8811",
-                    original_prompt="Cyberpunk futuristic supercar speeding through Tokyo neon rain at night.",
-                    enhanced_prompt="High-speed tracking shot of a matte-black futuristic hypercar with glowing cyan neon underglow, drifting through wet Tokyo streets under towering holographic billboards. Dynamic rain droplets streaking across anamorphic camera lens, reflection on asphalt puddles, atmospheric fog.",
-                    structured_direction_json=json.dumps({
-                        "subject": "Matte-black aerodynamic hypercar with cyan LED accents",
-                        "environment": "Dystopian Tokyo alleyways wet with rain and vibrant neon reflections",
-                        "action": "High-speed drift carving around a corner at high velocity",
-                        "camera": "Pursuit drone tracking camera with dynamic tilt and motion blur",
-                        "lighting": "High contrast cyan and magenta neon signage backlight",
-                        "mood": "Exhilarating, dark cyberpunk, cinematic adrenaline"
-                    }),
-                    style="Realistic",
-                    aspect_ratio="16:9",
-                    duration="10s",
-                    provider="luma-ai",
-                    model_id="luma-dream-machine",
-                    execution_mode="External Web",
-                    status=GenerationStatus.COMPLETED,
-                    progress_percentage=100,
-                    video_url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-                    thumbnail_url="https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=1200&q=80",
-                    generation_time_seconds=14.2,
-                    created_at=datetime.now(timezone.utc)
-                )
-            ]
-            db.add_all(mock_seed)
-            db.commit()
+        pass
     finally:
         db.close()
 
@@ -116,6 +78,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition", "Content-Length", "Accept-Ranges", "Content-Type"],
 )
 
 # Exception Handlers

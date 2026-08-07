@@ -13,6 +13,7 @@ class CreateGenerationRequest(BaseModel):
     duration: Duration = Duration.FIVE_S
     negative_prompt: Optional[str] = Field(default=None, alias="negativePrompt")
     model_id: str = Field(default="Wan-AI/Wan2.2-TI2V-5B", alias="modelId")
+    smart_failover: Optional[bool] = Field(default=False, alias="smartFailover")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -29,6 +30,9 @@ class GenerationMetadataResponse(BaseModel):
     created_at: str = Field(alias="createdAt")
     resolution: str
     fps: int
+    is_synthetic: bool = Field(default=False, alias="isSynthetic")
+    fidelity_score: Optional[float] = Field(default=0.92, alias="fidelityScore")
+    fidelity_label: Optional[str] = Field(default="High Fidelity", alias="fidelityLabel")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -48,8 +52,30 @@ class VideoItemResponse(BaseModel):
     timestamp: str
     metadata: GenerationMetadataResponse
     error_message: Optional[str] = Field(default=None, alias="errorMessage")
+    is_synthetic: bool = Field(default=False, alias="isSynthetic")
+    is_favorite: bool = Field(default=False, alias="isFavorite")
+    favorite_at: Optional[str] = Field(default=None, alias="favoriteAt")
+    fidelity_score: Optional[float] = Field(default=0.92, alias="fidelityScore")
+    fidelity_label: Optional[str] = Field(default="High Fidelity", alias="fidelityLabel")
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class GenerationEventResponse(BaseModel):
+    id: str
+    generation_id: str = Field(alias="generationId")
+    step: str
+    status: str
+    started_at: str = Field(alias="startedAt")
+    completed_at: Optional[str] = Field(default=None, alias="completedAt")
+    duration_ms: Optional[int] = Field(default=0, alias="durationMs")
+    details: Optional[dict] = Field(default_factory=dict)
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ToggleFavoriteRequest(BaseModel):
+    favorite: bool
 
 
 class GenerationProgressInfoResponse(BaseModel):

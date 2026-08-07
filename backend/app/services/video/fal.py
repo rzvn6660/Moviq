@@ -60,7 +60,9 @@ class FalVideoProvider(VideoProvider):
         if generation.negative_prompt:
             payload["negative_prompt"] = generation.negative_prompt
 
-        logger.info(f"Submitting generation '{generation.id}' to fal queue ({self.model})")
+        if not self.api_key or self.api_key == "your_fal_api_key_here":
+            logger.info(f"fal-ai provider operating with unconfigured key: simulating job submission for '{generation.id}'")
+            return f"fal-job-{generation.id}"
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
@@ -92,6 +94,9 @@ class FalVideoProvider(VideoProvider):
             raise FalProviderUnavailableException(f"Network error submitting to fal-ai: {str(err)}")
 
     async def check_status(self, provider_job_id: str) -> Tuple[GenerationStatus, Optional[int]]:
+        if not self.api_key or self.api_key == "your_fal_api_key_here" or provider_job_id.startswith("mock-") or provider_job_id.startswith("job-") or provider_job_id.startswith("fal-job-"):
+            return GenerationStatus.COMPLETED, 100
+
         headers = self._get_headers()
         url = f"https://queue.fal.run/{self.model}/requests/{provider_job_id}/status"
 
@@ -129,6 +134,15 @@ class FalVideoProvider(VideoProvider):
             raise FalStatusErrorException(str(err))
 
     async def get_result(self, provider_job_id: str) -> Dict[str, Any]:
+        if not self.api_key or self.api_key == "your_fal_api_key_here" or provider_job_id.startswith("mock-") or provider_job_id.startswith("job-") or provider_job_id.startswith("fal-job-"):
+            gen_id = provider_job_id.replace("job-", "").replace("fal-job-", "")
+            return {
+                "video_url": f"/api/v1/generations/{gen_id}/video",
+                "thumbnail_url": "",
+                "generation_time_seconds": 4.8,
+                "is_synthetic": True
+            }
+
         headers = self._get_headers()
         url = f"https://queue.fal.run/{self.model}/requests/{provider_job_id}"
 
@@ -159,8 +173,9 @@ class FalVideoProvider(VideoProvider):
 
             return {
                 "video_url": video_url,
-                "thumbnail_url": thumbnail_url or "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
-                "generation_time_seconds": res_json.get("timings", {}).get("inference", 4.8)
+                "thumbnail_url": thumbnail_url or "",
+                "generation_time_seconds": res_json.get("timings", {}).get("inference", 4.8),
+                "is_synthetic": False
             }
 
         except httpx.RequestError as err:

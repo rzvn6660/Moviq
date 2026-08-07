@@ -150,8 +150,9 @@ class RemoteWanVideoProvider(VideoProvider):
                 _REMOTE_WAN_JOBS[job_id]["progress"] = 100
                 _REMOTE_WAN_JOBS[job_id]["result"] = {
                     "video_url": f"/api/v1/generations/{generation_id}/video",
-                    "thumbnail_url": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
-                    "generation_time_seconds": elapsed
+                    "thumbnail_url": "",
+                    "generation_time_seconds": elapsed,
+                    "is_synthetic": False
                 }
 
         except (httpx.ConnectError, httpx.ConnectTimeout) as err:

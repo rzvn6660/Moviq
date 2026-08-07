@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TopNavigation } from './components/layout/TopNavigation';
 import { PromptComposer } from './components/workspace/PromptComposer';
 import { AIDirector } from './components/workspace/AIDirector';
@@ -21,9 +21,11 @@ import type {
 } from './types/video';
 import { MoviqApiClient } from './services/apiClient';
 
+import { ProviderHealthPage } from './pages/ProviderHealth';
+
 export function App() {
   // Navigation & State
-  const [activeTab, setActiveTab] = useState<'workspace' | 'history'>('workspace');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'history' | 'favorites' | 'health'>('workspace');
   const [uiState, setUiState] = useState<UIState>('READY');
 
   // Input & Option State
@@ -47,6 +49,15 @@ export function App() {
   const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0);
   const [completedVideo, setCompletedVideo] = useState<VideoItem | null>(null);
 
+  // History Search & Filter Options
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'favorites' | 'completed' | 'failed' | 'queued'>('all');
+  const [historySearch, setHistorySearch] = useState<string>('');
+  const [historySort, setHistorySort] = useState<'newest' | 'oldest' | 'alphabetical' | 'generation_date' | 'favorite_date'>('newest');
+  const [historyProvider, setHistoryProvider] = useState<string>('');
+  const [historyModel, setHistoryModel] = useState<string>('');
+  const [isLoadingMoreHistory, setIsLoadingMoreHistory] = useState<boolean>(false);
+  const [historyOffset, setHistoryOffset] = useState<number>(0);
+
   // Progress Tracking
   const [isEnhancing, setIsEnhancing] = useState<boolean>(false);
   const [progressInfo, setProgressInfo] = useState<GenerationProgressInfo | undefined>(undefined);
@@ -58,13 +69,24 @@ export function App() {
     { id: 5, state: 'PROCESSING', title: 'Processing output', description: 'Applying color grade & encoding H.264 video container', status: 'pending' }
   ]);
 
+  const [smartFailover, setSmartFailover] = useState<boolean>(false);
+
   // Current Model Capability
   const currentModelCapability = models.find((m) => m.id === selectedModelId) || models[0];
 
   // Prompt Quality Analysis
   const promptAnalysis = MoviqApiClient.analyzePrompt(prompt);
 
-  // Initial load: Fetch model capabilities & history (limit 5 for evaluator requirement)
+  // Synchronize Tab with Filter state
+  useEffect(() => {
+    if (activeTab === 'favorites') {
+      setHistoryFilter('favorites');
+    } else if (activeTab === 'history' && historyFilter === 'favorites') {
+      setHistoryFilter('all');
+    }
+  }, [activeTab]);
+
+  // Initial load: Fetch model capabilities & history
   useEffect(() => {
     MoviqApiClient.fetchModelCapabilities().then((loadedModels) => {
       setModels(loadedModels);
@@ -72,26 +94,96 @@ export function App() {
         setSelectedModelId(loadedModels[0].id);
       }
     });
-
-    MoviqApiClient.fetchHistory(5).then((data) => {
-      setVideos(data.generations);
-      setTotalHistoryCount(data.totalCount);
-      if (data.generations.length > 0 && !completedVideo) {
-        setCompletedVideo(data.generations[0]);
-      }
-    });
   }, []);
+
+  // Fetch History whenever search, filters, or sorting changes
+  const loadHistory = async (offsetVal = 0, isAppend = false) => {
+    try {
+      setIsLoadingMoreHistory(true);
+      const res = await MoviqApiClient.fetchHistory({
+        limit: 20,
+        offset: offsetVal,
+        search: historySearch,
+        filter: historyFilter,
+        provider: historyProvider,
+        modelId: historyModel,
+        sortBy: historySort,
+      });
+
+      if (isAppend) {
+        setVideos((prev) => [...prev, ...res.generations]);
+      } else {
+        setVideos(res.generations);
+        if (res.generations.length > 0 && !completedVideo) {
+          setCompletedVideo(res.generations[0]);
+        }
+      }
+      setTotalHistoryCount(res.totalCount);
+      setHistoryOffset(offsetVal);
+    } catch (err) {
+      console.error("Failed to load history:", err);
+    } finally {
+      setIsLoadingMoreHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory(0, false);
+  }, [historySearch, historyFilter, historySort, historyProvider, historyModel]);
+
+  const handleLoadMoreHistory = () => {
+    if (videos.length < totalHistoryCount && !isLoadingMoreHistory) {
+      loadHistory(historyOffset + 20, true);
+    }
+  };
+
+  // Toggle Favorite Optimistic UI & API Update
+  const handleToggleFavorite = async (targetVideo: VideoItem) => {
+    const newFav = !targetVideo.isFavorite;
+
+    // Optimistic state update
+    setVideos((prev) =>
+      prev.map((v) => (v.id === targetVideo.id ? { ...v, isFavorite: newFav, favoriteAt: newFav ? new Date().toISOString() : undefined } : v))
+    );
+    if (completedVideo && completedVideo.id === targetVideo.id) {
+      setCompletedVideo({ ...completedVideo, isFavorite: newFav, favoriteAt: newFav ? new Date().toISOString() : undefined });
+    }
+
+    try {
+      await MoviqApiClient.toggleFavorite(targetVideo.id, newFav);
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      // Revert optimistic update on error
+      setVideos((prev) =>
+        prev.map((v) => (v.id === targetVideo.id ? { ...v, isFavorite: targetVideo.isFavorite } : v))
+      );
+      if (completedVideo && completedVideo.id === targetVideo.id) {
+        setCompletedVideo({ ...completedVideo, isFavorite: targetVideo.isFavorite });
+      }
+    }
+  };
+
+  // Delete Generation Handler
+  const handleDeleteVideo = async (targetVideo: VideoItem) => {
+    await MoviqApiClient.deleteGeneration(targetVideo.id);
+
+    setVideos((prev) => prev.filter((v) => v.id !== targetVideo.id));
+    setTotalHistoryCount((prev) => Math.max(0, prev - 1));
+
+    if (completedVideo && completedVideo.id === targetVideo.id) {
+      setCompletedVideo(null);
+      setUiState('READY');
+    }
+  };
 
   // Capability Fallback Validation when Selected Model changes
   useEffect(() => {
     if (!currentModelCapability) return;
 
-    // Fallback aspect ratio if current ratio is unsupported by new model
     if (!currentModelCapability.supportedAspectRatios.includes(selectedRatio)) {
       setSelectedRatio(currentModelCapability.supportedAspectRatios[0]);
     }
 
-    // Fallback duration if current duration is unsupported by new model
     if (!currentModelCapability.supportedDurations.includes(selectedDuration)) {
       setSelectedDuration(currentModelCapability.supportedDurations[0]);
     }
@@ -155,7 +247,8 @@ export function App() {
           aspectRatio: selectedRatio,
           duration: selectedDuration,
           negativePrompt: currentModelCapability?.supportsNegativePrompt ? negativePrompt : undefined,
-          modelId: selectedModelId
+          modelId: selectedModelId,
+          smartFailover: smartFailover
         },
         (info, step) => {
           setUiState(info.state);
@@ -207,6 +300,8 @@ export function App() {
     setUiState('READY');
   };
 
+  const favoriteCount = useMemo(() => videos.filter((v) => v.isFavorite).length, [videos]);
+
   return (
     <div className="min-h-screen bg-[#070d1f] text-slate-100 font-sans selection:bg-amber-500/30 selection:text-amber-300">
       {/* Navigation Top Bar */}
@@ -216,6 +311,7 @@ export function App() {
         uiState={uiState}
         setUiState={handleDevStateChange}
         historyCount={totalHistoryCount || videos.length}
+        favoriteCount={favoriteCount}
       />
 
       {/* Main Container */}
@@ -264,7 +360,7 @@ export function App() {
                 />
               </div>
 
-              {/* Advanced Settings (Negative Prompt & Model) */}
+              {/* Advanced Settings (Negative Prompt, Model & Smart Failover) */}
               <AdvancedSettings
                 negativePrompt={negativePrompt}
                 setNegativePrompt={setNegativePrompt}
@@ -272,6 +368,8 @@ export function App() {
                 setSelectedModelId={setSelectedModelId}
                 models={models}
                 currentModelCapability={currentModelCapability}
+                smartFailover={smartFailover}
+                setSmartFailover={setSmartFailover}
               />
 
               {/* Primary Action Button: Generate Video */}
@@ -298,20 +396,39 @@ export function App() {
                 onRegenerate={handleRegenerate}
                 onCreateVariation={handleCreateVariation}
                 onReuseSettings={() => handleReuseSettings()}
+                onToggleFavorite={handleToggleFavorite}
               />
             </section>
           </div>
+        ) : activeTab === 'health' ? (
+          <ProviderHealthPage />
         ) : (
-          /* Evaluator History View (Shows Top 5 by default) */
+          /* History & Favorites View */
           <GenerationHistory
             videos={videos}
             totalCount={totalHistoryCount}
+            activeFilter={historyFilter}
+            setActiveFilter={setHistoryFilter}
+            searchQuery={historySearch}
+            setSearchQuery={setHistorySearch}
+            sortBy={historySort}
+            setSortBy={setHistorySort}
+            selectedProvider={historyProvider}
+            setSelectedProvider={setHistoryProvider}
+            selectedModel={historyModel}
+            setSelectedModel={setHistoryModel}
             onReuseSettings={(v) => handleReuseSettings(v)}
             onSelectVideo={(v) => {
               setCompletedVideo(v);
               setUiState('COMPLETED');
               setActiveTab('workspace');
             }}
+            onToggleFavorite={handleToggleFavorite}
+            onDeleteVideo={handleDeleteVideo}
+            onNavigateStudio={() => setActiveTab('workspace')}
+            onLoadMore={handleLoadMoreHistory}
+            hasMore={videos.length < totalHistoryCount}
+            isLoadingMore={isLoadingMoreHistory}
           />
         )}
       </main>

@@ -261,6 +261,97 @@ class ValidationErrorException(MoviqException):
         )
 
 
+# Kie Video Provider Exceptions
+class KieConfigurationErrorException(MoviqException):
+    def __init__(self, message: str = "KIE_API_KEY is not configured on backend server"):
+        super().__init__(
+            code="KIE_CONFIGURATION_ERROR",
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            retryable=False,
+        )
+
+
+class KieAuthenticationErrorException(MoviqException):
+    def __init__(self, message: str = "Kie.ai API key authentication failed"):
+        super().__init__(
+            code="KIE_AUTHENTICATION_ERROR",
+            message=message,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            retryable=False,
+        )
+
+
+class KieRateLimitedException(MoviqException):
+    def __init__(self, message: str = "Kie.ai rate limit exceeded. Please try again later."):
+        super().__init__(
+            code="KIE_RATE_LIMITED",
+            message=message,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            retryable=True,
+        )
+
+
+class KieQuotaExceededException(MoviqException):
+    def __init__(self, message: str = "Kie.ai quota or account credits exceeded"):
+        super().__init__(
+            code="KIE_QUOTA_EXCEEDED",
+            message=message,
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            retryable=False,
+        )
+
+
+class KieModelUnavailableException(MoviqException):
+    def __init__(self, message: str = "Selected model is currently unavailable on Kie.ai"):
+        super().__init__(
+            code="KIE_MODEL_UNAVAILABLE",
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            retryable=True,
+        )
+
+
+class KieProviderUnavailableException(MoviqException):
+    def __init__(self, message: str = "Kie.ai video service is temporarily unavailable"):
+        super().__init__(
+            code="KIE_PROVIDER_UNAVAILABLE",
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            retryable=True,
+        )
+
+
+class KieGenerationFailedException(MoviqException):
+    def __init__(self, message: str = "Kie.ai video generation task failed"):
+        super().__init__(
+            code="KIE_GENERATION_FAILED",
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class KieInvalidResultException(MoviqException):
+    def __init__(self, message: str = "Kie.ai video result payload was invalid or missing video URL"):
+        super().__init__(
+            code="KIE_INVALID_RESULT",
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class KieTimeoutException(MoviqException):
+    def __init__(self, message: str = "Kie.ai request timed out"):
+        super().__init__(
+            code="KIE_TIMEOUT",
+            message=message,
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            retryable=True,
+        )
+
+
 # Hugging Face Video Provider Exceptions
 class HFConfigurationErrorException(MoviqException):
     def __init__(self, message: str = "HF_TOKEN is not configured on backend server"):
@@ -470,6 +561,117 @@ class RemoteWANInvalidResultException(MoviqException):
             code="REMOTE_WAN_INVALID_RESULT",
             message=message,
             status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+# Moviq v2.0 Normalized Provider Exceptions
+class AuthenticationFailedException(MoviqException):
+    def __init__(self, provider: str, message: str = "Provider API key authentication failed"):
+        super().__init__(
+            code="AUTHENTICATION_FAILED",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            retryable=False,
+        )
+
+
+class QuotaExhaustedException(MoviqException):
+    def __init__(self, provider: str, message: str = "Provider API quota or credit exhausted"):
+        super().__init__(
+            code="QUOTA_EXHAUSTED",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            retryable=False,
+        )
+
+
+class InvalidModelException(MoviqException):
+    def __init__(self, provider: str, model_id: str):
+        super().__init__(
+            code="INVALID_MODEL",
+            message=f"[{provider}] Model '{model_id}' is invalid or not supported",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            retryable=False,
+        )
+
+
+class ModelUnavailableException(MoviqException):
+    def __init__(self, provider: str, model_id: str, message: str = "Model is currently offline or under maintenance"):
+        super().__init__(
+            code="MODEL_UNAVAILABLE",
+            message=f"[{provider}] Model '{model_id}' is unavailable: {message}",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            retryable=True,
+        )
+
+
+class GPUBusyException(MoviqException):
+    def __init__(self, provider: str, message: str = "GPU worker nodes are busy or queue is full"):
+        super().__init__(
+            code="GPU_BUSY",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            retryable=True,
+        )
+
+
+class GPUTimeoutException(MoviqException):
+    def __init__(self, provider: str, message: str = "GPU execution request timed out"):
+        super().__init__(
+            code="GPU_TIMEOUT",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            retryable=True,
+        )
+
+
+class DownloadFailedException(MoviqException):
+    def __init__(self, provider: str, message: str = "Failed to stream or download generated video payload"):
+        super().__init__(
+            code="DOWNLOAD_FAILED",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class InvalidVideoException(MoviqException):
+    def __init__(self, provider: str, message: str = "Downloaded video failed OpenCV validation"):
+        super().__init__(
+            code="INVALID_VIDEO",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class RateLimitedException(MoviqException):
+    def __init__(self, provider: str, message: str = "Provider API rate limit exceeded"):
+        super().__init__(
+            code="RATE_LIMITED",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            retryable=True,
+        )
+
+
+class NetworkErrorException(MoviqException):
+    def __init__(self, provider: str, message: str = "Network connection to provider endpoint failed"):
+        super().__init__(
+            code="NETWORK_ERROR",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            retryable=True,
+        )
+
+
+class UnknownProviderErrorException(MoviqException):
+    def __init__(self, provider: str, message: str = "An unexpected error occurred during provider execution"):
+        super().__init__(
+            code="UNKNOWN_PROVIDER_ERROR",
+            message=f"[{provider}] {message}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             retryable=True,
         )
 

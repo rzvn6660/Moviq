@@ -4,13 +4,13 @@ def test_list_models_capabilities(client):
     data = response.json()
     assert "models" in data
     models = data["models"]
-    assert len(models) >= 4
+    assert len(models) >= 5
 
-    # Check Hunyuan Video capabilities
-    hunyuan = next(m for m in models if m["id"] == "hunyuan-video-v1")
-    assert "16:9" in hunyuan["supportedAspectRatios"]
-    assert hunyuan["supportsNegativePrompt"] is True
+    # Check Kling 3.0 Pro capabilities
+    kling = next(m for m in models if m["id"] == "kling-3.0/video")
+    assert "16:9" in kling["supportedAspectRatios"]
+    assert kling["supportsNegativePrompt"] is True
 
-    # Check Luma capabilities
-    luma = next(m for m in models if m["id"] == "luma-dream-machine")
+    # Check Luma Dream Machine capabilities
+    luma = next(m for m in models if m["id"] == "dream-machine")
     assert luma["supportsNegativePrompt"] is False

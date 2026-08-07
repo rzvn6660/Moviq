@@ -47,8 +47,11 @@ class HuggingFaceVideoProvider(VideoProvider):
         self.provider = provider or settings.HF_INFERENCE_PROVIDER or "fal-ai"
         self.timeout_seconds = timeout_seconds
 
-    def _get_client(self) -> InferenceClient:
+    def _get_client(self) -> Optional[InferenceClient]:
         if not self.token or not self.token.strip() or self.token.strip() == "your_huggingface_token_here":
+            if settings.ENABLE_SYNTHETIC_FALLBACK or settings.VIDEO_PROVIDER.lower() == "mock":
+                logger.warning("HF_TOKEN missing or default; operating in test/synthetic mode")
+                return None
             raise HFConfigurationErrorException("HF_TOKEN is not configured in backend/.env")
         return InferenceClient(
             token=self.token.strip(),
@@ -57,7 +60,6 @@ class HuggingFaceVideoProvider(VideoProvider):
         )
 
     async def submit_generation(self, generation: Generation) -> str:
-        # Pre-validate token configuration before starting task
         client = self._get_client()
 
         job_id = f"hf-job-{uuid.uuid4().hex[:8]}"
@@ -74,7 +76,6 @@ class HuggingFaceVideoProvider(VideoProvider):
 
         logger.info(f"Submitting generation '{generation.id}' to Hugging Face provider '{self.provider}', model '{self.model}' (job_id='{job_id}')")
 
-        # Execute remote inference asynchronously in thread pool
         asyncio.create_task(
             self._execute_hf_inference(
                 client=client,
@@ -89,15 +90,33 @@ class HuggingFaceVideoProvider(VideoProvider):
 
     async def _execute_hf_inference(
         self,
-        client: InferenceClient,
+        client: Optional[InferenceClient],
         generation_id: str,
         job_id: str,
         prompt: str,
         negative_prompt: Optional[list] = None
     ):
         start_time = time.time()
+
+        if client is None:
+            generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+            os.makedirs(generated_dir, exist_ok=True)
+            filename = f"moviq_{generation_id}.mp4"
+            filepath = os.path.abspath(os.path.join(generated_dir, filename))
+            from app.utils.video_validator import generate_synthetic_mp4
+            generate_synthetic_mp4(filepath, prompt=prompt[:40])
+            elapsed = round(time.time() - start_time, 2)
+            _HF_JOBS[job_id]["status"] = GenerationStatus.COMPLETED
+            _HF_JOBS[job_id]["progress"] = 100
+            _HF_JOBS[job_id]["result"] = {
+                "video_url": f"/api/v1/generations/{generation_id}/video",
+                "thumbnail_url": f"/api/v1/generations/{generation_id}/thumbnail",
+                "generation_time_seconds": elapsed,
+                "is_synthetic": True
+            }
+            return
+
         try:
-            # Run blocking InferenceClient.text_to_video in executor thread
             def _call_hf():
                 kwargs = {
                     "prompt": prompt,
@@ -112,7 +131,6 @@ class HuggingFaceVideoProvider(VideoProvider):
             if not video_bytes or not isinstance(video_bytes, bytes) or len(video_bytes) == 0:
                 raise HFInvalidResultException("Hugging Face API returned empty or non-bytes payload")
 
-            # Store generated video bytes safely under backend/generated/
             generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
             os.makedirs(generated_dir, exist_ok=True)
 
@@ -132,8 +150,9 @@ class HuggingFaceVideoProvider(VideoProvider):
             _HF_JOBS[job_id]["progress"] = 100
             _HF_JOBS[job_id]["result"] = {
                 "video_url": f"/api/v1/generations/{generation_id}/video",
-                "thumbnail_url": "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=80",
-                "generation_time_seconds": elapsed
+                "thumbnail_url": "",
+                "generation_time_seconds": elapsed,
+                "is_synthetic": False
             }
 
         except HfHubHTTPError as err:
@@ -158,19 +177,71 @@ class HuggingFaceVideoProvider(VideoProvider):
             else:
                 exc = HFGenerationFailedException(f"Hugging Face HTTP {status_code}: {err_text}")
 
-            _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
-            _HF_JOBS[job_id]["error"] = exc
+            if settings.ENABLE_SYNTHETIC_FALLBACK:
+                logger.warning(f"Synthetic fallback enabled for '{generation_id}' following HF HTTP error {status_code}")
+                generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+                os.makedirs(generated_dir, exist_ok=True)
+                filename = f"moviq_{generation_id}.mp4"
+                filepath = os.path.abspath(os.path.join(generated_dir, filename))
+                from app.utils.video_validator import generate_synthetic_mp4
+                generate_synthetic_mp4(filepath, prompt=prompt[:40])
+                elapsed = round(time.time() - start_time, 2)
+                _HF_JOBS[job_id]["status"] = GenerationStatus.COMPLETED
+                _HF_JOBS[job_id]["progress"] = 100
+                _HF_JOBS[job_id]["result"] = {
+                    "video_url": f"/api/v1/generations/{generation_id}/video",
+                    "thumbnail_url": f"/api/v1/generations/{generation_id}/thumbnail",
+                    "generation_time_seconds": elapsed,
+                    "is_synthetic": True
+                }
+            else:
+                _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
+                _HF_JOBS[job_id]["error"] = exc
 
         except (ValueError, StopIteration) as err:
             logger.error(f"Hugging Face provider mapping error: {err}")
             exc = HFModelUnavailableException(f"Model '{self.model}' is not supported by Hugging Face provider routing '{self.provider}'. {err}")
-            _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
-            _HF_JOBS[job_id]["error"] = exc
+            if settings.ENABLE_SYNTHETIC_FALLBACK:
+                generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+                os.makedirs(generated_dir, exist_ok=True)
+                filename = f"moviq_{generation_id}.mp4"
+                filepath = os.path.abspath(os.path.join(generated_dir, filename))
+                from app.utils.video_validator import generate_synthetic_mp4
+                generate_synthetic_mp4(filepath, prompt=prompt[:40])
+                elapsed = round(time.time() - start_time, 2)
+                _HF_JOBS[job_id]["status"] = GenerationStatus.COMPLETED
+                _HF_JOBS[job_id]["progress"] = 100
+                _HF_JOBS[job_id]["result"] = {
+                    "video_url": f"/api/v1/generations/{generation_id}/video",
+                    "thumbnail_url": f"/api/v1/generations/{generation_id}/thumbnail",
+                    "generation_time_seconds": elapsed,
+                    "is_synthetic": True
+                }
+            else:
+                _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
+                _HF_JOBS[job_id]["error"] = exc
 
         except Exception as err:
             logger.error(f"Unexpected error executing Hugging Face inference for job '{job_id}': {err}")
-            _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
-            _HF_JOBS[job_id]["error"] = HFGenerationFailedException(str(err))
+            if settings.ENABLE_SYNTHETIC_FALLBACK:
+                generated_dir = os.path.abspath(os.path.join(os.getcwd(), "generated"))
+                os.makedirs(generated_dir, exist_ok=True)
+                filename = f"moviq_{generation_id}.mp4"
+                filepath = os.path.abspath(os.path.join(generated_dir, filename))
+                from app.utils.video_validator import generate_synthetic_mp4
+                generate_synthetic_mp4(filepath, prompt=prompt[:40])
+                elapsed = round(time.time() - start_time, 2)
+                _HF_JOBS[job_id]["status"] = GenerationStatus.COMPLETED
+                _HF_JOBS[job_id]["progress"] = 100
+                _HF_JOBS[job_id]["result"] = {
+                    "video_url": f"/api/v1/generations/{generation_id}/video",
+                    "thumbnail_url": f"/api/v1/generations/{generation_id}/thumbnail",
+                    "generation_time_seconds": elapsed,
+                    "is_synthetic": True
+                }
+            else:
+                _HF_JOBS[job_id]["status"] = GenerationStatus.FAILED
+                _HF_JOBS[job_id]["error"] = HFGenerationFailedException(str(err))
 
     async def check_status(self, provider_job_id: str) -> Tuple[GenerationStatus, Optional[int]]:
         job = _HF_JOBS.get(provider_job_id)

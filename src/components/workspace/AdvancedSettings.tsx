@@ -9,6 +9,8 @@ interface AdvancedSettingsProps {
   setSelectedModelId: (val: string) => void;
   models: ModelCapability[];
   currentModelCapability?: ModelCapability;
+  smartFailover?: boolean;
+  setSmartFailover?: (val: boolean) => void;
 }
 
 export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
@@ -18,6 +20,8 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
   setSelectedModelId,
   models,
   currentModelCapability,
+  smartFailover = false,
+  setSmartFailover,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -130,6 +134,25 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({
                 )}
               </div>
             )}
+          </div>
+
+          {/* Smart Failover Control */}
+          <div className="p-3 rounded-lg bg-[#151b2d] border border-[#23293c] space-y-1.5">
+            <label className="flex items-center gap-2.5 cursor-pointer text-[11px] font-medium text-slate-200">
+              <input
+                type="checkbox"
+                checked={smartFailover}
+                onChange={(e) => setSmartFailover && setSmartFailover(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500"
+              />
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Smart Failover (Optional)</span>
+              </span>
+            </label>
+            <p className="text-[10px] text-slate-400 pl-6 leading-relaxed">
+              When enabled, if the selected provider fails, Moviq will automatically retry with a secondary compatible provider, logging all failover events to the timeline.
+            </p>
           </div>
 
           {/* Negative Prompt Field */}

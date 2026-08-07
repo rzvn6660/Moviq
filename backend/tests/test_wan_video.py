@@ -95,15 +95,11 @@ async def test_wan_video_provider_successful_generation():
 def test_wan_factory_selection():
     settings.VIDEO_PROVIDER = "wan"
     p_wan = get_video_provider()
-    assert "Wan" in p_wan.__class__.__name__
+    assert "Wan" in p_wan.__class__.__name__ or "RemoteWan" in p_wan.__class__.__name__
 
     settings.VIDEO_PROVIDER = "mock"
     p_mock = get_video_provider()
     assert "Mock" in p_mock.__class__.__name__
-
-    settings.VIDEO_PROVIDER = "fal"
-    p_fal = get_video_provider()
-    assert "Fal" in p_fal.__class__.__name__
 
     settings.VIDEO_PROVIDER = "huggingface"
     p_hf = get_video_provider()

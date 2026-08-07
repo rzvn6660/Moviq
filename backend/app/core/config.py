@@ -15,7 +15,11 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
-    VIDEO_PROVIDER: str = "mock"  # "mock", "fal", "huggingface", "wan", or "remote_wan"
+    VIDEO_PROVIDER: str = "kie"  # "kie", "mock", "fal", "huggingface", "wan", or "remote_wan"
+    KIE_API_KEY: Optional[str] = None
+    KIE_BASE_URL: str = "https://api.kie.ai"
+    KIE_MODEL: str = "kling-3.0/video"
+
     FAL_KEY: Optional[str] = None
     FAL_MODEL: str = "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
 
@@ -39,6 +43,13 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     DIRECTOR_FALLBACK_TO_MOCK: bool = False
     GENERATION_TIMEOUT_SECONDS: int = 600
+    ENABLE_SYNTHETIC_FALLBACK: bool = False
+    HEALTH_CACHE_TTL_SECONDS: int = 45
+    POLL_INTERVAL_SECONDS: float = 2.0
+    POLL_MAX_ATTEMPTS: int = 300
+    STORAGE_DIR: str = "generated"
+    THUMBNAIL_WIDTH: int = 320
+    THUMBNAIL_HEIGHT: int = 180
 
     model_config = SettingsConfigDict(
         env_file=".env",
