@@ -1,51 +1,67 @@
 # 🎬 Moviq
 
-<p align="center">
-  <strong>Production-Grade AI Video Generation Studio with Multi-Provider Orchestration</strong>
-</p>
+> **Production-ready AI Video Generation Platform** built with **React**, **FastAPI**, **TypeScript**, **Python**, and **OpenCV**.
+
+Moviq is an open-source AI video generation platform that unifies multiple commercial and open-source video generation providers behind a single, provider-independent architecture. It combines AI-powered prompt enhancement, intelligent provider routing, computer vision validation, and execution observability into one modern developer experience.
 
 <p align="center">
-  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18.x-blue?logo=react" alt="React 18"></a>
-  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI"></a>
-  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript" alt="TypeScript"></a>
-  <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python" alt="Python"></a>
-  <a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch" alt="PyTorch"></a>
-  <a href="https://opencv.org"><img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv" alt="OpenCV"></a>
-  <a href="https://pytest.org"><img src="https://img.shields.io/badge/Tests-87%2F87%20Passed-emerald" alt="Tests Passed"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-brightgreen" alt="MIT License"></a>
-</p>
-
----
-
-## 🎥 Live Demo
-
-<p align="center">
-  <img src="demo-assets/create_studio.png" alt="Moviq Studio Interface" width="92%" style="border-radius: 8px;">
-</p>
-
-<p align="center">
-  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0"><img src="https://img.shields.io/badge/%F0%9F%8E%A5_Watch_Full_Demo-Release_Assets-blue?style=for-the-badge" alt="Watch Full Demo"></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="docs/DEVELOPER_QUICKSTART.md"><img src="https://img.shields.io/badge/%F0%9F%93%96_Documentation-Quickstart-emerald?style=for-the-badge" alt="Documentation"></a>
+  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8" alt="OpenCV">
+  <img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/Tests-87%2F87-success" alt="Tests">
+  <img src="https://img.shields.io/badge/License-MIT-success" alt="License">
 </p>
 
 ---
 
-## 🔗 Quick Links
+# 🎥 Live Demo
+
+<p align="center">
+  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0">
+    <img src="./demo-assets/demo.gif" width="95%" alt="Moviq Demo">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0">
+    <img src="https://img.shields.io/badge/%E2%96%B6%20Watch%20Full%20Demo-GitHub-blue?style=for-the-badge&logo=github" alt="Watch Full Demo">
+  </a>
+  <a href="./docs/DEVELOPER_QUICKSTART.md">
+    <img src="https://img.shields.io/badge/Developer-Quickstart-success?style=for-the-badge" alt="Developer Quickstart">
+  </a>
+  <a href="./docs/API_DOCUMENTATION.md">
+    <img src="https://img.shields.io/badge/API-Documentation-orange?style=for-the-badge" alt="API Documentation">
+  </a>
+</p>
+
+> **Note**
+>
+> The full demonstration video is available in the GitHub Release assets. The preview above is a short GIF showing the application workflow.
+
+---
+
+# 🚀 Quick Links
 
 [Overview](#-overview) • [Why Moviq](#-why-moviq) • [Architecture](#-architecture) • [Features](#-key-features) • [Provider Matrix](#-supported-providers) • [Application Preview](#-application-preview) • [Quick Start](#-quick-start) • [REST API](#-rest-api) • [Documentation](#-documentation)
 
 ---
 
-## 📌 Overview
+# 📌 Overview
 
-**Moviq** is an open-source AI video generation studio designed around a provider-independent backend architecture. It unifies commercial AI cloud engines (Kie Kling 3.0, Veo 3.1, Luma Dream Machine, MiniMax Hailuo) and open-source diffusion models (Hugging Face Wan 2.2, Remote Wan, LTX Video) behind a single FastAPI service layer.
+Moviq is an open-source AI video generation platform built around a provider-independent architecture. It unifies commercial AI video services and self-hosted diffusion models behind a single FastAPI backend, enabling consistent prompt enhancement, generation workflows, validation, and media delivery.
 
-Instead of managing fragmented APIs and silent polling failures, Moviq provides live provider health telemetry, a rule-based AI prompt recommendation engine, optional transparent smart failover, a 13-stage microsecond event timeline, and defensive computer vision motion validation using OpenCV.
+The platform includes an AI Director for prompt refinement, provider health telemetry, deterministic provider recommendation, transparent failover, execution timeline observability, and OpenCV-based motion validation to verify generated video outputs before delivery.
+
+> **Note**
+>
+> Some providers require their own API keys, active subscriptions, or usage credits. Availability, generation time, and output quality depend on the selected provider.
 
 ---
 
-## 💡 Why Moviq?
+# 💡 Why Moviq?
 
 Integrating multiple AI video models typically introduces significant engineering complexity:
 - **API Fragmentation**: Upstream providers vary wildly in request schemas, polling intervals, error taxonomy, and credit management.
@@ -56,7 +72,7 @@ Moviq solves these issues by decoupling application logic from AI provider imple
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
 
 ```mermaid
 flowchart TD
@@ -82,7 +98,7 @@ flowchart TD
 
 ---
 
-## ✨ Key Features
+# ✨ Key Features
 
 ### 🤖 AI Features
 - **AI Director Prompt Enhancer**: Deconstructs raw user prompts into camera motion, lighting, and mood keyframes via Groq LLM with offline mock fallback.
@@ -104,7 +120,7 @@ flowchart TD
 
 ---
 
-## 📊 Supported Providers
+# 📊 Supported Providers
 
 | Provider | Model ID | Execution Mode | Supported Aspect Ratios | Max Duration | Negative Prompt |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -119,7 +135,7 @@ flowchart TD
 
 ---
 
-## 🖼️ Application Preview
+# 🖼️ Application Preview
 
 #### 1. Create Studio Workspace
 Prompt composer featuring style presets, aspect ratio selectors, AI Director drawer, and model recommendation pill.
@@ -135,7 +151,7 @@ Media grid with auto-generated thumbnails, prompt search filters, status filters
 
 ---
 
-## ⚡ Quick Start
+# ⚡ Quick Start
 
 ### 1. Backend Setup
 ```bash
@@ -163,7 +179,7 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## ⚙️ Configuration
+# ⚙️ Configuration
 
 Environment settings are declared in `backend/app/core/config.py` and loaded from `backend/.env`:
 
@@ -177,7 +193,7 @@ Environment settings are declared in `backend/app/core/config.py` and loaded fro
 
 ---
 
-## 📡 REST API
+# 📡 REST API
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -192,7 +208,7 @@ Environment settings are declared in `backend/app/core/config.py` and loaded fro
 
 ---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
 ```text
 Moviq/
@@ -215,7 +231,7 @@ Moviq/
 
 ---
 
-## 📚 Documentation Index
+# 📚 Documentation Index
 
 - 🏛️ [Architecture Guide](docs/ARCHITECTURE.md)
 - 📊 [Provider Matrix Reference](docs/PROVIDER_MATRIX.md)
@@ -227,7 +243,7 @@ Moviq/
 
 ---
 
-## ⚠️ Limitations & Roadmap
+# ⚠️ Limitations & Roadmap
 
 ### Limitations
 - **Health Cache**: Uses an in-memory 45-second TTL cache (suited for single instances; Redis recommended for multi-worker clusters).
@@ -240,13 +256,13 @@ Moviq/
 
 ---
 
-## 🤝 Contributing
+# 🤝 Contributing
 
 Contributions are welcome! Please review [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) before opening a pull request.
 
 ---
 
-## 📄 License & Author
+# 📄 License & Author
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
