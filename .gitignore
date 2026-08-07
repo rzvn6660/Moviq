@@ -36,5 +36,9 @@ __pycache__/
 
 # Generated Media Files & Database
 backend/generated/
+backend/browser_verification_outputs/
+backend/debug/
+backend/verify_*.py
+backend/run_verification.py
 *.mp4
 *.db

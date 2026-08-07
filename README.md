@@ -1,103 +1,134 @@
-# Moviq — Turn Ideas Into Motion
+# 🎬 Moviq — Modular AI Video Generation Studio
 
-> AI-Powered Video Creation Studio transforming simple user ideas into professionally directed motion clips.
+> A high-performance open-source AI video generation studio and provider-orchestration platform built with React 18, FastAPI, PyTorch, and OpenCV.
+
+![React](https://img.shields.io/badge/React-18.x-blue?logo=react)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch)
+![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv)
+![License](https://img.shields.io/badge/License-MIT-brightgreen)
+![Build Status](https://img.shields.io/badge/Build-Passing-emerald)
 
 ---
 
 ## 📌 Overview
 
-**Moviq** is a full-stack AI video creation studio designed to turn simple text prompts into high-fidelity AI videos. It pairs a **Groq-powered AI Director (`openai/gpt-oss-120b`)** for cinematic parameter expansion with a **Multi-Model / Multi-Provider Video Generation Architecture** supporting:
-- **Hosted Inference**: Hugging Face Inference API (`Wan-AI/Wan2.2-TI2V-5B` via `fal-ai` serverless router)
-- **Hosted API / Cloud Queue**: `fal-ai` open video models (`fal-ai/kling-video/v2.5-turbo/pro/text-to-video`, `hunyuan-video-v1`)
-- **Self-Hosted GPU**: Open-source CUDA GPU workers (`Wan-AI/Wan2.1-T2V-1.3B-Diffusers` via Kaggle/remote worker API)
-- **External Web Models**: Unconfigured / external models (`Pika 2.5`, `Dream Machine v2.5`, `Gen-3 Alpha`) with clean availability badges & external provider links
-- **Simulation / Demo**: Offline development simulation (`MockVideoProvider`)
+**Moviq** is an open-source AI video generation studio designed with a provider-independent architecture. It abstracts commercial cloud AI engines and self-hosted open-source diffusion models behind a unified backend service layer.
+
+Users can compose text prompts, enhance cinematic camera keyframes using an **AI Director LLM**, evaluate real-time provider health, execute video generations across 6 AI provider backplanes, inspect microsecond generation event timelines, and stream or download verified H.264 MP4 containers.
 
 ---
 
-## 🎬 Demo Workflow
+## ✨ Features
 
-```
-Idea Input ──► AI Director ──► Enhanced Prompt & 6-Axis Parameters ──► Multi-Model Selector ──► Dynamic Provider Router ──► Playback & Export
-```
-
-1. **Idea Input**: User enters a simple concept (e.g. *"A futuristic sports car driving through a rain-soaked city at night"*).
-2. **AI Director Enhancement**: Groq expands the idea into an enhanced prompt and 6-axis camera direction parameters (`subject`, `environment`, `action`, `camera`, `lighting`, `mood`), providing a before/after prompt score.
-3. **Interactive Control**: User retains full control to inspect, edit, or customize the enhanced prompt and negative parameters.
-4. **Multi-Model Engine Selection**: User selects a model engine in `AdvancedSettings`. Moviq displays execution modes (`HOSTED_INFERENCE`, `SELF_HOSTED`, `EXTERNAL_WEB`), status badges (`READY`, `NOT CONFIGURED`), and direct external links for unconfigured models.
-5. **Generation & Lifecycle**: Generation request is routed to the exact provider matching `model_id` with a unique `Idempotency-Key` header, advancing through async lifecycle stages (`QUEUED` → `SUBMITTED` → `GENERATING` → `PROCESSING` → `COMPLETED`).
-6. **Playback & Export**: Rendered video streams in the custom VideoPreview player with one-click download, variation creation, generation inspector, and persistent history.
+- **🧠 Multi-Provider Architecture**: Unified routing across Kie.ai (Kling 3.0 Pro, Wan 2.1, Google Veo 3.1), Luma AI (Dream Machine), Hailuo AI (MiniMax Video 01), Hugging Face (Wan 2.2), Remote Wan (Self-Hosted CUDA), and LTX Video (Local PyTorch GPU).
+- **🎬 AI Director Prompt Enhancer**: Structural prompt engineering (Subject, Environment, Action, Camera, Lighting, Mood) powered by Groq LLM with offline fallback.
+- **📡 Provider Health Telemetry**: Live monitoring of ping latency, queue traffic, credential verification, and model availability with an async 45-second TTL cache lock.
+- **🎯 Semantic Recommendation Engine**: Rule-based keyword matching recommending optimal video models based on visual themes (cars → Kling, nature → Luma, anime → Hailuo).
+- **🔀 Optional Smart Failover**: Automatic fallback provider sequence with microsecond audit event timeline logging. Zero silent substitutions.
+- **📊 Truthful Cost & Benchmark Metrics**: Measured runtime, queue delay, success rate, and documented credit requirements. Zero fabricated numbers.
+- **👁️ Computer Vision Video Validation (v2)**: OpenCV frame-difference motion analysis (`absdiff`) that automatically detects and rejects static images disguised as MP4s.
+- **⚡ Microsecond Observability Timeline**: 13-stage execution audit trail tracking every step from prompt submission to thumbnail extraction.
 
 ---
 
-## ⭐ Core Features
-
-- **Groq AI Director (`openai/gpt-oss-120b`)**: Structured output generation for camera framing, lighting ratio, and cinematic mood mapping.
-- **Multi-Model / Multi-Provider Dynamic Routing**: Model selection dynamically resolves the matching backend execution path (`HuggingFaceVideoProvider`, `FalVideoProvider`, `RemoteWanVideoProvider`, `WanVideoProvider`).
-- **Execution Mode & Availability Enforcement**: Unconfigured or external models are cleanly marked `NOT CONFIGURED` with explicit backend error rejection instead of secret fallback to mock demo assets.
-- **Persistent Execution Mode Metadata**: `execution_mode` is stored on database records and rendered in the `GenerationInspector`.
-- **Deterministic PromptScorer**: 100-point scoring engine quantifying prompt enhancement quality.
-- **Wan2.1 T2V 1.3B Open-Source Provider**: Locally executable PyTorch & Diffusers GPU diffusion pipeline and remote worker integration.
-- **Backend-Enforced Idempotency**: Database-level deduplication via `Idempotency-Key` headers.
-- **Truthful Asynchronous Progress**: Supports both percentage-based and stage-based progress indicators.
-- **Generation Inspector**: Technical metadata viewer displaying AI Engine, Provider, Execution Mode, Resolution, FPS, and Prompt Lineage.
-
----
-
-## 📐 System Architecture
+## 🏗️ System Architecture
 
 ```mermaid
-graph TD
-    UI[React 18 + Vite + Tailwind CSS] -->|REST API| API[FastAPI Python Backend]
+flowchart TD
+    UI["React 18 + Vite Frontend"] -->|REST API / JSON| API["FastAPI Backend Core"]
+    API --> AID["AI Director (Groq LLM)"]
+    API --> REC["AI Recommender Engine"]
+    API --> HLT["Provider Health Telemetry"]
+    API --> GEN["Generation Service"]
+    GEN --> FACT["BaseVideoProvider Factory"]
     
-    subgraph AI Director Engine
-        API --> DIR_SVC[Director Service]
-        DIR_SVC --> GROQ[Groq Provider<br/>openai/gpt-oss-120b]
-        DIR_SVC --> MOCK_DIR[Mock Director Provider]
-        DIR_SVC --> SCORER[PromptScorer Engine]
-    end
+    FACT --> KIE["Kie.ai (Kling/Veo)"]
+    FACT --> LUMA["Luma AI (Dream Machine)"]
+    FACT --> HAI["Hailuo AI (MiniMax)"]
+    FACT --> HF["Hugging Face (Wan 2.2)"]
+    FACT --> RWAN["Remote Wan (CUDA)"]
+    FACT --> LTX["LTX Video (PyTorch)"]
 
-    subgraph Multi-Model Video Engine Router
-        API --> GEN_SVC[Generation Service]
-        GEN_SVC --> VP_FACTORY[get_video_provider model_id]
-        VP_FACTORY --> HF[HuggingFaceVideoProvider<br/>Wan2.2 TI2V 5B Hosted Inference]
-        VP_FACTORY --> FAL[FalVideoProvider<br/>Hunyuan-Video / Kling 2.5]
-        VP_FACTORY --> R_WAN[RemoteWanVideoProvider<br/>Wan2.1 Self-Hosted GPU]
-        VP_FACTORY --> WAN[WanVideoProvider<br/>Wan2.1 Local GPU]
-        VP_FACTORY --> MOCK_VP[MockVideoProvider<br/>Development Simulation]
-    end
-
-    GEN_SVC --> DB[(SQLite Database<br/>moviq.db)]
+    GEN --> VAL["Video Validator (OpenCV)"]
+    GEN --> DB[(SQLite / SQLAlchemy)]
+    GEN --> EVT["Generation Events Timeline"]
+    GEN --> DL["H.264 MP4 Download Stream"]
 ```
 
 ---
 
-## 🔌 API Reference Summary
+## 📊 Provider Matrix
 
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/v1/health` | `GET` | Service health status and version info |
-| `/api/v1/models` | `GET` | List available model capabilities, execution modes, and configuration status |
-| `/api/v1/director/enhance` | `POST` | Expand prompt into structured 6-axis direction |
-| `/api/v1/generations` | `POST` | Submit video generation job (supports `Idempotency-Key` and `model_id` routing) |
-| `/api/v1/generations/{id}` | `GET` | Poll generation status, progress, or output |
-| `/api/v1/generations/{id}/video` | `GET` | Serve locally stored MP4 video file |
-| `/api/v1/generations/{id}/download` | `GET` | Secure streaming proxy download with `Content-Disposition` |
-| `/api/v1/generations` | `GET` | List recent generation history |
+| Provider | Model ID | Execution Mode | Supported Aspect Ratios | Max Duration | Negative Prompt |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Kie.ai** | `kling-3.0/video` | Hosted API | `16:9`, `9:16`, `1:1` | 10s | Yes |
+| **Kie.ai** | `wan-2.1/video` | Hosted API | `16:9`, `1:1` | 5s | Yes |
+| **Kie.ai** | `veo-3.1` | Hosted API | `16:9`, `9:16`, `1:1` | 10s | No |
+| **Luma AI** | `dream-machine` | Hosted API | `16:9`, `9:16`, `1:1` | 5s | No |
+| **Hailuo AI** | `hailuo-01` | Hosted API | `16:9`, `9:16`, `1:1` | 5s | Yes |
+| **Hugging Face** | `Wan-AI/Wan2.2-TI2V-5B` | Serverless Inference | `16:9` | 5s | Yes |
+| **Remote Wan** | `Wan-AI/Wan2.1-T2V-1.3B-Diffusers` | Self-Hosted CUDA | `16:9` | 5s | Yes |
+| **LTX Video** | `ltx-video` | Local PyTorch GPU | `16:9` | 5s | Yes |
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## 🚀 Quickstart Guide
 
-Run the comprehensive backend test suite:
+### Prerequisites
+- Python 3.11 or 3.13
+- Node.js 18+
+
+### 1. Backend Setup
 ```bash
 cd backend
-venv\Scripts\python -m pytest
-```
-**Test Results**: `66 passed out of 66 tests` (100% pass rate in 15.26s).
 
-Run frontend production build verification:
-```bash
-npm run build
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment variables
+cp .env.example .env
+
+# Run FastAPI server
+uvicorn app.main:app --port 8001 --reload
 ```
-**Build Result**: `Succeeded` with 0 TypeScript or Vite errors.
+
+### 2. Frontend Setup
+```bash
+# In repository root
+npm install
+npm run dev
+```
+Open `http://localhost:5173` in your browser.
+
+---
+
+## 🔒 Security & Protection
+
+- **Credential Protection**: API keys (`KIE_API_KEY`, `HF_TOKEN`, `LUMA_API_KEY`, `HAILUO_API_KEY`) remain strictly backend-only. Never exposed in responses or client JS bundles.
+- **SSRF Mitigation**: Remote video download endpoints validate domain destinations against loopback (`127.0.0.1`, `localhost`) and private subnet boundaries.
+- **Path Traversal Protection**: Local file serving strictly enforces `filepath.startswith(generated_dir)` path boundaries.
+- **Idempotency**: Supports `Idempotency-Key` headers to prevent race conditions or duplicate generation jobs.
+
+---
+
+## 📚 Documentation Links
+
+- [Architecture Guide](docs/ARCHITECTURE.md)
+- [Provider Matrix](docs/PROVIDER_MATRIX.md)
+- [REST API Documentation](docs/API_DOCUMENTATION.md)
+- [Developer Quickstart](docs/DEVELOPER_QUICKSTART.md)
+- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- [FAQ](docs/FAQ.md)
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
