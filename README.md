@@ -20,7 +20,7 @@
 ## 🎥 Live Demo Showcase
 
 <p align="center">
-  <img src="demo-assets/create_studio.png" alt="Moviq Studio Interface" width="90%" style="border-radius: 8px;">
+  <img src="demo-assets/MOVIQ demo.mp4" alt="Moviq Studio Interface" width="90%" style="border-radius: 8px;">
 </p>
 
 <p align="center">
