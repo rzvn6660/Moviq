@@ -17,15 +17,29 @@
 
 ---
 
+## 🎥 Live Demo Showcase
+
+<p align="center">
+  <img src="demo-assets/create_studio.png" alt="Moviq Studio Interface" width="90%" style="border-radius: 8px;">
+</p>
+
+<p align="center">
+  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0"><img src="https://img.shields.io/badge/%F0%9F%8E%A5_Watch_Full_Demo-Release_Assets-blue?style=for-the-badge" alt="Watch Full Demo"></a>
+  &nbsp;&nbsp;
+  <a href="docs/DEVELOPER_QUICKSTART.md"><img src="https://img.shields.io/badge/%F0%9F%93%96_Documentation-Quickstart-emerald?style=for-the-badge" alt="Documentation"></a>
+</p>
+
+---
+
 ## 📌 Overview
 
-**Moviq** is an open-source AI video generation studio designed around a provider-independent backend architecture. It unifies commercial AI cloud engines (Kie Kling 3.0, Veo 3.1, Luma Dream Machine, MiniMax Hailuo) and open-source diffusion models (Hugging Face Wan 2.2, Remote Wan, LTX Video) behind a single FastAPI service layer.
+**Moviq** is an open-source AI video generation studio designed around a provider-independent backend architecture. It unifies commercial cloud AI engines (Kie Kling 3.0, Veo 3.1, Luma Dream Machine, MiniMax Hailuo) and open-source diffusion models (Hugging Face Wan 2.2, Remote Wan, LTX Video) behind a single FastAPI service layer.
 
 Instead of managing fragmented APIs and silent polling failures, Moviq provides live provider health telemetry, a rule-based AI prompt recommendation engine, optional transparent smart failover, a 13-stage microsecond event timeline, and defensive computer vision motion validation using OpenCV.
 
 ---
 
-## ✨ Features by Category
+## ✨ Key Features
 
 ### 🤖 AI Features
 - **AI Director Prompt Enhancer**: Structural prompt decomposition (Subject, Environment, Action, Camera, Lighting, Mood) powered by Groq LLM with offline mock fallback.
@@ -47,7 +61,7 @@ Instead of managing fragmented APIs and silent polling failures, Moviq provides 
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
@@ -88,20 +102,19 @@ flowchart TD
 
 ---
 
-## 🖼️ Interface Showcase
+## 🖼️ Screenshot Gallery
 
-<table width="100%">
-  <tr>
-    <td width="50%" align="center">
-      <b>Create Studio Workspace</b><br>
-      <img src="demo-assets/create_studio.png" alt="Create Studio Workspace" width="100%">
-    </td>
-    <td width="50%" align="center">
-      <b>Recent Generation History</b><br>
-      <img src="demo-assets/recent_history.png" alt="Recent Generation History" width="100%">
-    </td>
-  </tr>
-</table>
+#### 1. Create Studio Workspace
+Prompt composer with style presets, aspect ratio selectors, AI Director drawer, and model recommendations.
+![Create Studio Workspace](demo-assets/create_studio.png)
+
+#### 2. Provider Operations Telemetry Dashboard
+Real-time latency ping gauges, authentication status, queue status, and benchmark metrics for all 6 provider nodes.
+![Provider Operations Dashboard](demo-assets/provider_health.png)
+
+#### 3. Recent Generation History & Favorites
+Auto-generated thumbnails, prompt search filters, status filters, star favorites, and direct MP4 downloads.
+![Recent Generation History](demo-assets/recent_history.png)
 
 ---
 
@@ -133,6 +146,17 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
+## 📡 API Overview
+
+- `GET /api/v1/providers/health`: Returns live telemetry for all 6 provider nodes (45s TTL cache).
+- `POST /api/v1/providers/recommend`: Rule-based semantic prompt recommendation.
+- `POST /api/v1/generations`: Submits video generation task (supports `Idempotency-Key` header).
+- `GET /api/v1/generations/{id}`: Returns progress, status, and download links.
+- `GET /api/v1/generations/{id}/events`: Returns 13-stage microsecond audit events timeline.
+- `GET /api/v1/generations/{id}/download`: Streams verified H.264 MP4 file with `Content-Disposition`.
+
+---
+
 ## 📂 Project Structure
 
 ```text
@@ -156,7 +180,7 @@ Moviq/
 
 ---
 
-## 📚 Documentation Links
+## 📚 Documentation Index
 
 - 🏛️ [Architecture Guide](docs/ARCHITECTURE.md)
 - 📊 [Provider Matrix Reference](docs/PROVIDER_MATRIX.md)
@@ -168,7 +192,7 @@ Moviq/
 
 ---
 
-## ⚠️ Known Limitations & Roadmap
+## ⚠️ Limitations & Roadmap
 
 ### Limitations
 - **Health Cache**: Uses an in-memory 45-second TTL cache (suited for single instances; Redis recommended for multi-worker clusters).
