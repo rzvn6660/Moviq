@@ -1,212 +1,345 @@
 # 🎬 Moviq
 
-<p align="center">
-  <strong>Production-Ready AI Video Generation Studio with Multi-Provider Orchestration</strong>
-</p>
+> **Production-ready AI Video Generation Platform** built with **React**, **FastAPI**, **TypeScript**, **Python**, and **OpenCV**.
+
+Moviq is an open-source AI video generation platform that unifies multiple commercial and open-source video generation providers behind a single, provider-independent architecture. It combines AI-powered prompt enhancement, intelligent provider routing, computer vision validation, and execution observability into one modern developer experience.
 
 <p align="center">
-  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18.x-blue?logo=react" alt="React 18"></a>
-  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI"></a>
-  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript" alt="TypeScript"></a>
-  <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python" alt="Python"></a>
-  <a href="https://opencv.org"><img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv" alt="OpenCV"></a>
-  <a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch" alt="PyTorch"></a>
-  <a href="https://pytest.org"><img src="https://img.shields.io/badge/Tests-87%2F87%20Passed-emerald" alt="Tests Passed"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-brightgreen" alt="MIT License"></a>
-</p>
 
----
+<img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white">
+<img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
+<img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white">
+<img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8">
+<img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white">
+<img src="https://img.shields.io/badge/Tests-87%2F87-success">
+<img src="https://img.shields.io/badge/License-MIT-success">
 
-## 🎥 Live Demo Showcase
-
-<p align="center">
-  <img src="demo-assets/MOVIQ demo.mp4" alt="Moviq Studio Interface" width="90%" style="border-radius: 8px;">
-</p>
-
-<p align="center">
-  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0"><img src="https://img.shields.io/badge/%F0%9F%8E%A5_Watch_Full_Demo-Release_Assets-blue?style=for-the-badge" alt="Watch Full Demo"></a>
-  &nbsp;&nbsp;
-  <a href="docs/DEVELOPER_QUICKSTART.md"><img src="https://img.shields.io/badge/%F0%9F%93%96_Documentation-Quickstart-emerald?style=for-the-badge" alt="Documentation"></a>
 </p>
 
 ---
 
-## 📌 Overview
+# 🎥 Live Demo
 
-**Moviq** is an open-source AI video generation studio designed around a provider-independent backend architecture. It unifies commercial cloud AI engines (Kie Kling 3.0, Veo 3.1, Luma Dream Machine, MiniMax Hailuo) and open-source diffusion models (Hugging Face Wan 2.2, Remote Wan, LTX Video) behind a single FastAPI service layer.
+<p align="center">
 
-Instead of managing fragmented APIs and silent polling failures, Moviq provides live provider health telemetry, a rule-based AI prompt recommendation engine, optional transparent smart failover, a 13-stage microsecond event timeline, and defensive computer vision motion validation using OpenCV.
+<a href="YOUR_GITHUB_RELEASE_LINK">
+<img src="demo-assets/demo.gif" width="95%" alt="Moviq Demo">
+</a>
+
+</p>
+
+<p align="center">
+
+<a href="YOUR_GITHUB_RELEASE_LINK">
+<img src="https://img.shields.io/badge/▶%20Watch%20Full%20Demo-GitHub-blue?style=for-the-badge&logo=github">
+</a>
+
+<a href="./docs/DEVELOPER_QUICKSTART.md">
+<img src="https://img.shields.io/badge/Developer-Quickstart-success?style=for-the-badge">
+</a>
+
+<a href="./docs/API_DOCUMENTATION.md">
+<img src="https://img.shields.io/badge/API-Documentation-orange?style=for-the-badge">
+</a>
+
+</p>
+
+> **Note**
+>
+> The full demonstration video is available in the GitHub Release assets. The preview above is a short GIF showing the application workflow.
 
 ---
 
-## ✨ Key Features
+# 📌 Overview
 
-### 🤖 AI Features
-- **AI Director Prompt Enhancer**: Structural prompt decomposition (Subject, Environment, Action, Camera, Lighting, Mood) powered by Groq LLM with offline mock fallback.
-- **Semantic Recommender Engine**: Rule-based prompt semantics evaluator matching visual themes to optimal models (cars → Kling, nature → Luma, anime → Hailuo).
-- **Smart Failover**: Transparent fallback execution sequence with microsecond audit event logging.
+Moviq is a modular AI Video Generation Platform designed around a provider-independent backend architecture. Instead of integrating with a single model, Moviq provides a unified interface for multiple AI video providers through a standardized execution pipeline.
 
-### ⚙️ Engineering & Observability
-- **Multi-Provider Factory**: Unified `BaseVideoProvider` interface handling authentication, submission, async status polling, and payload delivery.
-- **Provider Health Telemetry**: Live ping latency, queue traffic, and credential status with an async 45-second TTL cache lock.
-- **Microsecond Timeline Inspector**: 13-stage audit trail tracking every lifecycle step from prompt reception to thumbnail extraction.
+The platform currently supports commercial services such as **Kie.ai**, **Luma AI**, and **Hailuo AI**, alongside open-source diffusion models including **Hugging Face Wan**, **Remote Wan**, and **LTX Video**. Every provider follows the same lifecycle for authentication, job submission, polling, download, validation, and media delivery.
 
-### 🎥 Video Pipeline & Validation
-- **Computer Vision Frame Analysis**: OpenCV `absdiff` perceptual frame-difference calculation that automatically detects and rejects static images disguised as MP4s.
-- **H.264 MP4 Delivery**: Standards-compliant MP4 file streaming with `Content-Disposition` headers and path traversal shielding.
+Beyond video generation, Moviq includes an **AI Director** for prompt enhancement, **provider health telemetry**, **semantic provider recommendation**, **execution timeline observability**, and **OpenCV-based motion validation** to ensure generated outputs are valid videos before they are streamed or downloaded.
 
-### 🛠️ Developer Experience
-- **Synthetic Local Fallback**: Generates dynamic MP4 previews locally using OpenCV `VideoWriter` for offline testing without paid API keys.
-- **Automated Test Suite**: 87 Pytest unit, integration, and stress tests achieving 100% pass rate.
+### Highlights
+
+- 🎥 Multi-provider AI video generation platform
+- 🧠 AI Director for prompt enhancement
+- 🔀 Provider-independent Factory & Strategy architecture
+- 📡 Live provider health monitoring
+- ⏱️ Execution timeline & observability
+- 🛡️ OpenCV motion validation for generated videos
+- 📂 Generation history, favorites, and downloads
+- ⚡ FastAPI REST backend with React 18 frontend
+- 🧪 Automated backend testing (87/87 passing)
+- 📖 Comprehensive developer documentation
+
+> **Important**
+>
+> Some providers require their own API keys, active subscriptions, or usage credits. Video quality, generation speed, and feature availability depend on the selected provider.
+> # ✨ Key Features
+
+## 🤖 AI Generation
+
+- **Multi-Provider Video Generation** – Generate videos using multiple AI providers through a unified interface.
+- **AI Director Prompt Enhancement** – Automatically restructures prompts into cinematic instructions using subject, environment, action, camera, lighting, and mood.
+- **Provider Recommendation Engine** – Suggests the most suitable provider based on prompt semantics.
+- **Transparent Smart Failover** – Optionally retries compatible providers when enabled, with every failover recorded in the execution timeline.
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Platform Architecture
+
+- **Provider-Independent Design** – Factory and Strategy patterns allow providers to be added or replaced without affecting the application.
+- **Unified Provider Lifecycle** – Authentication, submission, polling, download, validation, and cleanup follow a standardized workflow.
+- **RESTful FastAPI Backend** – Typed APIs with Pydantic validation, SQLAlchemy ORM, and structured error handling.
+- **Modern React Frontend** – Built with React 18, TypeScript, and Vite for a responsive developer experience.
+
+---
+
+## 📊 Observability
+
+- **Provider Health Dashboard** – Monitor provider availability, latency, queue status, and authentication state.
+- **Generation Timeline** – View every execution stage from prompt submission to completed video.
+- **Structured Event Logging** – Execution metadata is persisted for debugging and post-generation analysis.
+
+---
+
+## 🎥 Video Pipeline
+
+- **OpenCV Motion Validation** – Detects and rejects static-image videos using frame-difference analysis.
+- **Automatic Thumbnail Extraction** – Generates preview thumbnails from completed videos.
+- **Verified MP4 Delivery** – Streams standards-compliant H.264 MP4 files with secure download endpoints.
+- **Generation History** – Search, filter, favorite, and manage previously generated videos.
+
+---
+
+## 🧪 Reliability
+
+- **87 Automated Tests** – Backend unit, integration, and stress tests covering provider routing, validation, and API behavior.
+- **Robust Error Handling** – Consistent provider exception mapping and descriptive API responses.
+- **Secure by Design** – API keys remain server-side with protections against path traversal and SSRF attacks.
+
+---# 🏗️ Architecture
+
+Moviq follows a modular, provider-independent architecture that separates the frontend, backend services, provider integrations, and media validation pipeline. New providers can be added by implementing the common `BaseVideoProvider` interface without changing the core generation workflow.
 
 ```mermaid
-flowchart TD
-    UI["React 18 + Vite Frontend"] -->|REST API / JSON| API["FastAPI Backend Core"]
-    API --> AID["AI Director (Groq LLM)"]
-    API --> REC["AI Recommender Engine"]
-    API --> HLT["Provider Health Telemetry"]
-    API --> GEN["Generation Service"]
-    GEN --> FACT["BaseVideoProvider Factory"]
-    
-    FACT --> KIE["Kie.ai (Kling 3.0 / Veo 3.1)"]
-    FACT --> LUMA["Luma AI (Dream Machine)"]
-    FACT --> HAI["Hailuo AI (MiniMax 01)"]
-    FACT --> HF["Hugging Face (Wan 2.2)"]
-    FACT --> RWAN["Remote Wan (Self-Hosted CUDA)"]
-    FACT --> LTX["LTX Video (Local PyTorch GPU)"]
+flowchart LR
 
-    GEN --> VAL["Video Validator (OpenCV absdiff)"]
-    GEN --> DB[(SQLite / SQLAlchemy)]
-    GEN --> EVT["Generation Events Timeline"]
-    GEN --> DL["H.264 MP4 Download Stream"]
+    U[User]
+
+    U --> FE[React 18 + TypeScript + Vite]
+
+    FE --> API[FastAPI REST API]
+
+    API --> DIR[AI Director]
+    API --> REC[Provider Recommender]
+    API --> GEN[Generation Service]
+    API --> HEALTH[Provider Health]
+
+    GEN --> FACTORY[Provider Factory]
+
+    FACTORY --> KIE[Kie.ai]
+    FACTORY --> LUMA[Luma AI]
+    FACTORY --> HAILUO[Hailuo AI]
+    FACTORY --> HF[Hugging Face]
+    FACTORY --> WAN[Remote Wan]
+    FACTORY --> LTX[LTX Video]
+
+    GEN --> VALIDATOR[OpenCV Video Validation]
+
+    VALIDATOR --> STORAGE[(SQLite + Generated Media)]
+
+    STORAGE --> API
+
+    API --> FE
+```
+
+## Generation Workflow
+
+1. User submits a text prompt.
+2. AI Director enhances the prompt (optional).
+3. Provider Recommendation Engine selects the most suitable provider.
+4. Generation Service submits the request.
+5. Provider Factory routes the request to the selected provider.
+6. Provider returns generation status.
+7. Generated video is downloaded.
+8. OpenCV validates motion and extracts a thumbnail.
+9. Metadata and timeline events are stored.
+10. The completed video becomes available for preview and download.
+
+---
+
+## Core Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| **React Frontend** | User interface, generation controls, history, timeline, downloads |
+| **FastAPI Backend** | REST API, orchestration, validation, persistence |
+| **AI Director** | Prompt enhancement and optimization |
+| **Provider Factory** | Routes requests to the selected AI provider |
+| **Generation Service** | Controls generation lifecycle and provider communication |
+| **Video Validator** | Motion validation, thumbnail extraction, MP4 verification |
+| **SQLite Database** | Stores generations, events, favorites, metadata |
+| **Provider Health** | Live health telemetry and provider status monitoring |
+
+---# 📊 Supported Providers
+
+Moviq provides a unified interface for multiple commercial and open-source AI video generation providers. Each provider is integrated through the common `BaseVideoProvider` abstraction, enabling consistent request handling, status polling, validation, and media delivery.
+
+| Provider | Model | Type | Typical Use Case |
+|-----------|-------|------|------------------|
+| **Kie.ai** | `kling-3.0/video` | Hosted API | Cinematic, action, automotive, realistic motion |
+| **Kie.ai** | `veo-3.1` | Hosted API | High-quality photorealistic video generation |
+| **Kie.ai** | `wan-2.1/video` | Hosted API | General-purpose text-to-video |
+| **Luma AI** | `dream-machine` | Hosted API | Cinematic storytelling and natural scenes |
+| **Hailuo AI** | `hailuo-01` | Hosted API | Character animation and anime-style motion |
+| **Hugging Face** | `Wan-AI/Wan2.2-TI2V-5B` | Serverless | Open-source inference and experimentation |
+| **Remote Wan** | `Wan-AI/Wan2.1-T2V-1.3B` | Self Hosted | Private GPU deployments |
+| **LTX Video** | `ltx-video` | Local GPU | Offline generation and local development |
+
+---
+
+## Provider Capabilities
+
+| Feature | Kie | Luma | Hailuo | Hugging Face | Remote Wan | LTX |
+|---------|:---:|:-----:|:------:|:------------:|:----------:|:---:|
+| Text-to-Video | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Image-to-Video* | Depends on selected model | Provider dependent | Provider dependent | Model dependent | Model dependent | Local implementation |
+| Provider Health Monitoring | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Timeline Events | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| MP4 Validation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Thumbnail Extraction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Smart Recommendation | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+> **Note**
+>
+> Available models, resolutions, durations, and pricing depend on each provider's API and account limits. Moviq exposes provider capabilities but does not override provider-specific restrictions.
+
+---# 🖼️ Application Preview
+
+Explore the primary workflows and interface of Moviq.
+
+---
+
+## 🎬 Create Studio
+
+<p align="center">
+<img src="./demo-assets/create-studio.png" width="95%" alt="Create Studio">
+</p>
+
+Compose prompts, choose providers, configure generation settings, and enhance prompts using the AI Director.
+
+---
+
+## 🎥 Video Preview
+
+<p align="center">
+<img src="./demo-assets/video-preview.png" width="95%" alt="Video Preview">
+</p>
+
+Preview generated videos, inspect metadata, monitor progress, and download verified MP4 files.
+
+---
+
+## 📡 Provider Operations
+
+<p align="center">
+<img src="./demo-assets/provider-health.png" width="95%" alt="Provider Health Dashboard">
+</p>
+
+Monitor provider availability, authentication status, queue conditions, latency, benchmarks, and health telemetry.
+
+---
+
+## ⏱️ Generation Timeline
+
+<p align="center">
+<img src="./demo-assets/generation-timeline.png" width="95%" alt="Generation Timeline">
+</p>
+
+Inspect every execution stage, including prompt enhancement, provider submission, polling, download, validation, and completion.
+
+---
+
+## 📚 Recent History
+
+<p align="center">
+<img src="./demo-assets/recent-history.png" width="95%" alt="Recent History">
+</p>
+
+Browse previous generations with search, filters, favorites, thumbnails, timeline inspection, and verified MP4 downloads.
+
+---# 🚀 Quick Start
+
+## Prerequisites
+
+- Python **3.11+**
+- Node.js **18+**
+- npm
+- Git
+
+---
+
+## 1. Clone Repository
+
+```bash
+git clone https://github.com/rzvn6660/Moviq.git
+cd Moviq
 ```
 
 ---
 
-## 📊 Provider Capability Matrix
+## 2. Backend Setup
 
-| Provider | Model ID | Execution Mode | Supported Aspect Ratios | Max Duration | Negative Prompt |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Kie.ai** | `kling-3.0/video` | Hosted API | `16:9`, `9:16`, `1:1` | 10s | Yes |
-| **Kie.ai** | `wan-2.1/video` | Hosted API | `16:9`, `1:1` | 5s | Yes |
-| **Kie.ai** | `veo-3.1` | Hosted API | `16:9`, `9:16`, `1:1` | 10s | No |
-| **Luma AI** | `dream-machine` | Hosted API | `16:9`, `9:16`, `1:1` | 5s | No |
-| **Hailuo AI** | `hailuo-01` | Hosted API | `16:9`, `9:16`, `1:1` | 5s | Yes |
-| **Hugging Face** | `Wan-AI/Wan2.2-TI2V-5B` | Serverless Inference | `16:9` | 5s | Yes |
-| **Remote Wan** | `Wan-AI/Wan2.1-T2V-1.3B-Diffusers` | Self-Hosted CUDA | `16:9` | 5s | Yes |
-| **LTX Video** | `ltx-video` | Local PyTorch GPU | `16:9` | 5s | Yes |
-
----
-
-## 🖼️ Screenshot Gallery
-
-#### 1. Create Studio Workspace
-Prompt composer with style presets, aspect ratio selectors, AI Director drawer, and model recommendations.
-![Create Studio Workspace](demo-assets/create_studio.png)
-
-#### 2. Provider Operations Telemetry Dashboard
-Real-time latency ping gauges, authentication status, queue status, and benchmark metrics for all 6 provider nodes.
-![Provider Operations Dashboard](demo-assets/provider_health.png)
-
-#### 3. Recent Generation History & Favorites
-Auto-generated thumbnails, prompt search filters, status filters, star favorites, and direct MP4 downloads.
-![Recent Generation History](demo-assets/recent_history.png)
-
----
-
-## ⚡ 2-Minute Quick Start
-
-### 1. Backend Setup
 ```bash
 cd backend
 
-# Create & activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies & set environment variables
+# Windows
+venv\Scripts\activate
+
+# Linux / macOS
+source venv/bin/activate
+
 pip install -r requirements.txt
-cp .env.example .env
 
-# Run FastAPI dev server (port 8001)
-uvicorn app.main:app --port 8001 --reload
+cp .env.example .env
 ```
 
-### 2. Frontend Setup
+Start the backend:
+
 ```bash
-# In repository root
+uvicorn app.main:app --reload --port 8001
+```
+
+---
+
+## 3. Frontend Setup
+
+```bash
+cd ..
+
 npm install
+
 npm run dev
 ```
-Open **`http://localhost:5173`** in your browser.
 
----
+Open:
 
-## 📡 API Overview
-
-- `GET /api/v1/providers/health`: Returns live telemetry for all 6 provider nodes (45s TTL cache).
-- `POST /api/v1/providers/recommend`: Rule-based semantic prompt recommendation.
-- `POST /api/v1/generations`: Submits video generation task (supports `Idempotency-Key` header).
-- `GET /api/v1/generations/{id}`: Returns progress, status, and download links.
-- `GET /api/v1/generations/{id}/events`: Returns 13-stage microsecond audit events timeline.
-- `GET /api/v1/generations/{id}/download`: Streams verified H.264 MP4 file with `Content-Disposition`.
-
----
-
-## 📂 Project Structure
-
-```text
-Moviq/
-├── backend/
-│   ├── app/
-│   │   ├── api/             # FastAPI REST router endpoints
-│   │   ├── core/            # Config settings & exception taxonomy
-│   │   ├── db/              # SQLAlchemy models & repositories
-│   │   ├── schemas/         # Pydantic v2 validation schemas
-│   │   ├── services/        # Provider factory, health & recommender
-│   │   └── utils/           # OpenCV motion validator & synthetic fallback
-│   └── tests/               # 87 Pytest unit, integration & stress tests
-├── src/                     # React 18 TypeScript frontend
-│   ├── components/          # Studio, history, timeline & health components
-│   ├── pages/               # Provider Operations dashboard
-│   └── services/            # API client fetch wrappers
-├── docs/                    # Deep-dive architecture & API guides
-└── .github/                 # Issue & PR open-source templates
+```
+http://localhost:5173
 ```
 
 ---
 
-## 📚 Documentation Index
+## 4. Generate Your First Video
 
-- 🏛️ [Architecture Guide](docs/ARCHITECTURE.md)
-- 📊 [Provider Matrix Reference](docs/PROVIDER_MATRIX.md)
-- 📡 [REST API Documentation](docs/API_DOCUMENTATION.md)
-- 🚀 [Developer Quickstart Guide](docs/DEVELOPER_QUICKSTART.md)
-- 🛠️ [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- ❓ [Frequently Asked Questions (FAQ)](docs/FAQ.md)
-- 💡 [Technical Interview Q&A Guide](docs/INTERVIEW_GUIDE.md)
-
----
-
-## ⚠️ Limitations & Roadmap
-
-### Limitations
-- **Health Cache**: Uses an in-memory 45-second TTL cache (suited for single instances; Redis recommended for multi-worker clusters).
-- **Database**: SQLite default for local development (PostgreSQL recommended for production).
-
-### Roadmap
-- [ ] Redis shared cache adapter for multi-worker backend deployment.
-- [ ] Alembic database migration scripts.
-- [ ] WebSockets push subscription for real-time progress timeline events.
+1. Enter a prompt.
+2. Select an AI provider.
+3. (Optional) Enable AI Director.
+4. Click **Generate**.
+5. Monitor the timeline.
+6. Preview and download the generated MP4.
 
 ---
-
-## 📄 License & Author
-
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
-
-Maintained by **Open Source Contributors** • Built with Python & React.
