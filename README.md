@@ -1,40 +1,53 @@
-# 🎬 Moviq — Modular AI Video Generation Studio
+# 🎬 Moviq
 
-> A high-performance open-source AI video generation studio and provider-orchestration platform built with React 18, FastAPI, PyTorch, and OpenCV.
+<p align="center">
+  <strong>Production-Ready AI Video Generation Studio with Multi-Provider Orchestration</strong>
+</p>
 
-![React](https://img.shields.io/badge/React-18.x-blue?logo=react)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript)
-![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch)
-![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv)
-![License](https://img.shields.io/badge/License-MIT-brightgreen)
-![Build Status](https://img.shields.io/badge/Build-Passing-emerald)
+<p align="center">
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-18.x-blue?logo=react" alt="React 18"></a>
+  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI"></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript" alt="TypeScript"></a>
+  <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.11%20%7C%203.13-3776AB?logo=python" alt="Python"></a>
+  <a href="https://opencv.org"><img src="https://img.shields.io/badge/OpenCV-Computer%20Vision-5C3EE8?logo=opencv" alt="OpenCV"></a>
+  <a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch" alt="PyTorch"></a>
+  <a href="https://pytest.org"><img src="https://img.shields.io/badge/Tests-87%2F87%20Passed-emerald" alt="Tests Passed"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-brightgreen" alt="MIT License"></a>
+</p>
 
 ---
 
 ## 📌 Overview
 
-**Moviq** is an open-source AI video generation studio designed with a provider-independent architecture. It abstracts commercial cloud AI engines and self-hosted open-source diffusion models behind a unified backend service layer.
+**Moviq** is an open-source AI video generation studio designed around a provider-independent backend architecture. It unifies commercial AI cloud engines (Kie Kling 3.0, Veo 3.1, Luma Dream Machine, MiniMax Hailuo) and open-source diffusion models (Hugging Face Wan 2.2, Remote Wan, LTX Video) behind a single FastAPI service layer.
 
-Users can compose text prompts, enhance cinematic camera keyframes using an **AI Director LLM**, evaluate real-time provider health, execute video generations across 6 AI provider backplanes, inspect microsecond generation event timelines, and stream or download verified H.264 MP4 containers.
-
----
-
-## ✨ Features
-
-- **🧠 Multi-Provider Architecture**: Unified routing across Kie.ai (Kling 3.0 Pro, Wan 2.1, Google Veo 3.1), Luma AI (Dream Machine), Hailuo AI (MiniMax Video 01), Hugging Face (Wan 2.2), Remote Wan (Self-Hosted CUDA), and LTX Video (Local PyTorch GPU).
-- **🎬 AI Director Prompt Enhancer**: Structural prompt engineering (Subject, Environment, Action, Camera, Lighting, Mood) powered by Groq LLM with offline fallback.
-- **📡 Provider Health Telemetry**: Live monitoring of ping latency, queue traffic, credential verification, and model availability with an async 45-second TTL cache lock.
-- **🎯 Semantic Recommendation Engine**: Rule-based keyword matching recommending optimal video models based on visual themes (cars → Kling, nature → Luma, anime → Hailuo).
-- **🔀 Optional Smart Failover**: Automatic fallback provider sequence with microsecond audit event timeline logging. Zero silent substitutions.
-- **📊 Truthful Cost & Benchmark Metrics**: Measured runtime, queue delay, success rate, and documented credit requirements. Zero fabricated numbers.
-- **👁️ Computer Vision Video Validation (v2)**: OpenCV frame-difference motion analysis (`absdiff`) that automatically detects and rejects static images disguised as MP4s.
-- **⚡ Microsecond Observability Timeline**: 13-stage execution audit trail tracking every step from prompt submission to thumbnail extraction.
+Instead of managing fragmented APIs and silent polling failures, Moviq provides live provider health telemetry, a rule-based AI prompt recommendation engine, optional transparent smart failover, a 13-stage microsecond event timeline, and defensive computer vision motion validation using OpenCV.
 
 ---
 
-## 🏗️ System Architecture
+## ✨ Features by Category
+
+### 🤖 AI Features
+- **AI Director Prompt Enhancer**: Structural prompt decomposition (Subject, Environment, Action, Camera, Lighting, Mood) powered by Groq LLM with offline mock fallback.
+- **Semantic Recommender Engine**: Rule-based prompt semantics evaluator matching visual themes to optimal models (cars → Kling, nature → Luma, anime → Hailuo).
+- **Smart Failover**: Transparent fallback execution sequence with microsecond audit event logging.
+
+### ⚙️ Engineering & Observability
+- **Multi-Provider Factory**: Unified `BaseVideoProvider` interface handling authentication, submission, async status polling, and payload delivery.
+- **Provider Health Telemetry**: Live ping latency, queue traffic, and credential status with an async 45-second TTL cache lock.
+- **Microsecond Timeline Inspector**: 13-stage audit trail tracking every lifecycle step from prompt reception to thumbnail extraction.
+
+### 🎥 Video Pipeline & Validation
+- **Computer Vision Frame Analysis**: OpenCV `absdiff` perceptual frame-difference calculation that automatically detects and rejects static images disguised as MP4s.
+- **H.264 MP4 Delivery**: Standards-compliant MP4 file streaming with `Content-Disposition` headers and path traversal shielding.
+
+### 🛠️ Developer Experience
+- **Synthetic Local Fallback**: Generates dynamic MP4 previews locally using OpenCV `VideoWriter` for offline testing without paid API keys.
+- **Automated Test Suite**: 87 Pytest unit, integration, and stress tests achieving 100% pass rate.
+
+---
+
+## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
@@ -45,14 +58,14 @@ flowchart TD
     API --> GEN["Generation Service"]
     GEN --> FACT["BaseVideoProvider Factory"]
     
-    FACT --> KIE["Kie.ai (Kling/Veo)"]
+    FACT --> KIE["Kie.ai (Kling 3.0 / Veo 3.1)"]
     FACT --> LUMA["Luma AI (Dream Machine)"]
-    FACT --> HAI["Hailuo AI (MiniMax)"]
+    FACT --> HAI["Hailuo AI (MiniMax 01)"]
     FACT --> HF["Hugging Face (Wan 2.2)"]
-    FACT --> RWAN["Remote Wan (CUDA)"]
-    FACT --> LTX["LTX Video (PyTorch)"]
+    FACT --> RWAN["Remote Wan (Self-Hosted CUDA)"]
+    FACT --> LTX["LTX Video (Local PyTorch GPU)"]
 
-    GEN --> VAL["Video Validator (OpenCV)"]
+    GEN --> VAL["Video Validator (OpenCV absdiff)"]
     GEN --> DB[(SQLite / SQLAlchemy)]
     GEN --> EVT["Generation Events Timeline"]
     GEN --> DL["H.264 MP4 Download Stream"]
@@ -60,7 +73,7 @@ flowchart TD
 
 ---
 
-## 📊 Provider Matrix
+## 📊 Provider Capability Matrix
 
 | Provider | Model ID | Execution Mode | Supported Aspect Ratios | Max Duration | Negative Prompt |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -75,27 +88,38 @@ flowchart TD
 
 ---
 
-## 🚀 Quickstart Guide
+## 🖼️ Interface Showcase
 
-### Prerequisites
-- Python 3.11 or 3.13
-- Node.js 18+
+<table width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <b>Create Studio Workspace</b><br>
+      <img src="demo-assets/create_studio.png" alt="Create Studio Workspace" width="100%">
+    </td>
+    <td width="50%" align="center">
+      <b>Recent Generation History</b><br>
+      <img src="demo-assets/recent_history.png" alt="Recent Generation History" width="100%">
+    </td>
+  </tr>
+</table>
+
+---
+
+## ⚡ 2-Minute Quick Start
 
 ### 1. Backend Setup
 ```bash
 cd backend
 
-# Create virtual environment
+# Create & activate virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install dependencies & set environment variables
 pip install -r requirements.txt
-
-# Configure environment variables
 cp .env.example .env
 
-# Run FastAPI server
+# Run FastAPI dev server (port 8001)
 uvicorn app.main:app --port 8001 --reload
 ```
 
@@ -105,30 +129,60 @@ uvicorn app.main:app --port 8001 --reload
 npm install
 npm run dev
 ```
-Open `http://localhost:5173` in your browser.
+Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 🔒 Security & Protection
+## 📂 Project Structure
 
-- **Credential Protection**: API keys (`KIE_API_KEY`, `HF_TOKEN`, `LUMA_API_KEY`, `HAILUO_API_KEY`) remain strictly backend-only. Never exposed in responses or client JS bundles.
-- **SSRF Mitigation**: Remote video download endpoints validate domain destinations against loopback (`127.0.0.1`, `localhost`) and private subnet boundaries.
-- **Path Traversal Protection**: Local file serving strictly enforces `filepath.startswith(generated_dir)` path boundaries.
-- **Idempotency**: Supports `Idempotency-Key` headers to prevent race conditions or duplicate generation jobs.
+```text
+Moviq/
+├── backend/
+│   ├── app/
+│   │   ├── api/             # FastAPI REST router endpoints
+│   │   ├── core/            # Config settings & exception taxonomy
+│   │   ├── db/              # SQLAlchemy models & repositories
+│   │   ├── schemas/         # Pydantic v2 validation schemas
+│   │   ├── services/        # Provider factory, health & recommender
+│   │   └── utils/           # OpenCV motion validator & synthetic fallback
+│   └── tests/               # 87 Pytest unit, integration & stress tests
+├── src/                     # React 18 TypeScript frontend
+│   ├── components/          # Studio, history, timeline & health components
+│   ├── pages/               # Provider Operations dashboard
+│   └── services/            # API client fetch wrappers
+├── docs/                    # Deep-dive architecture & API guides
+└── .github/                 # Issue & PR open-source templates
+```
 
 ---
 
 ## 📚 Documentation Links
 
-- [Architecture Guide](docs/ARCHITECTURE.md)
-- [Provider Matrix](docs/PROVIDER_MATRIX.md)
-- [REST API Documentation](docs/API_DOCUMENTATION.md)
-- [Developer Quickstart](docs/DEVELOPER_QUICKSTART.md)
-- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- [FAQ](docs/FAQ.md)
+- 🏛️ [Architecture Guide](docs/ARCHITECTURE.md)
+- 📊 [Provider Matrix Reference](docs/PROVIDER_MATRIX.md)
+- 📡 [REST API Documentation](docs/API_DOCUMENTATION.md)
+- 🚀 [Developer Quickstart Guide](docs/DEVELOPER_QUICKSTART.md)
+- 🛠️ [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+- ❓ [Frequently Asked Questions (FAQ)](docs/FAQ.md)
+- 💡 [Technical Interview Q&A Guide](docs/INTERVIEW_GUIDE.md)
 
 ---
 
-## 📄 License
+## ⚠️ Known Limitations & Roadmap
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+### Limitations
+- **Health Cache**: Uses an in-memory 45-second TTL cache (suited for single instances; Redis recommended for multi-worker clusters).
+- **Database**: SQLite default for local development (PostgreSQL recommended for production).
+
+### Roadmap
+- [ ] Redis shared cache adapter for multi-worker backend deployment.
+- [ ] Alembic database migration scripts.
+- [ ] WebSockets push subscription for real-time progress timeline events.
+
+---
+
+## 📄 License & Author
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+
+Maintained by **Open Source Contributors** • Built with Python & React.
