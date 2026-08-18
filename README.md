@@ -147,7 +147,7 @@ Real-time ping gauges, queue status, authentication verification, and documented
 
 #### 3. Recent Generation History
 Media grid with auto-generated thumbnails, prompt search filters, status filters, star favorites, and direct MP4 downloads.
-![Recent Generation History](demo-assets/recent_history.png)
+
 
 ---
 
