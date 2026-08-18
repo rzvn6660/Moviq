@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 import httpx
 
-from app.services.video.fal import FalVideoProvider
+
 from app.api.generations import is_safe_download_url
 from app.core.config import settings
 from app.models.generation import Generation

@@ -15,28 +15,25 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
-    VIDEO_PROVIDER: str = "kie"  # "kie", "mock", "fal", "huggingface", "wan", or "remote_wan"
+    MOVIQ_EXECUTION_MODE: str = "safe"  # "safe" (local synthetic rendering) or "live" (explicit user-triggered paid generation)
+    VIDEO_PROVIDER: str = "kie"  # "kie", "luma", "hailuo", "huggingface", "remote_wan", "ltx", or "mock"
     KIE_API_KEY: Optional[str] = None
     KIE_BASE_URL: str = "https://api.kie.ai"
     KIE_MODEL: str = "kling-3.0/video"
 
-    FAL_KEY: Optional[str] = None
-    FAL_MODEL: str = "fal-ai/kling-video/v2.5-turbo/pro/text-to-video"
+    LUMA_API_KEY: Optional[str] = None
+    HAILUO_API_KEY: Optional[str] = None
 
     HF_TOKEN: Optional[str] = None
     HF_VIDEO_MODEL: str = "Wan-AI/Wan2.2-TI2V-5B"
     HF_INFERENCE_PROVIDER: Optional[str] = "fal-ai"
 
-    WAN_MODEL_ID: str = "Wan-AI/Wan2.1-T2V-1.3B-Diffusers"
-    WAN_DEVICE: str = "cuda"
-    WAN_DTYPE: str = "float16"
-    WAN_NUM_INFERENCE_STEPS: int = 20
-    WAN_GUIDANCE_SCALE: float = 5.0
-    WAN_FPS: int = 16
-
     REMOTE_WAN_URL: Optional[str] = "http://localhost:8002"
     REMOTE_WAN_API_KEY: Optional[str] = None
     REMOTE_WAN_TIMEOUT_SECONDS: int = 900
+    WAN_NUM_INFERENCE_STEPS: int = 20
+    WAN_GUIDANCE_SCALE: float = 5.0
+    WAN_FPS: int = 16
 
     DIRECTOR_PROVIDER: str = "mock"  # "mock" or "groq"
     GROQ_API_KEY: Optional[str] = None

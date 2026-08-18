@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Sparkles, Zap, ShieldCheck } from 'lucide-react';
 import { TopNavigation } from './components/layout/TopNavigation';
 import { PromptComposer } from './components/workspace/PromptComposer';
 import { AIDirector } from './components/workspace/AIDirector';
@@ -24,9 +25,12 @@ import { MoviqApiClient } from './services/apiClient';
 import { ProviderHealthPage } from './pages/ProviderHealth';
 
 export function App() {
-  // Navigation & State
+  // Navigation & Execution Mode State
   const [activeTab, setActiveTab] = useState<'workspace' | 'history' | 'favorites' | 'health'>('workspace');
   const [uiState, setUiState] = useState<UIState>('READY');
+  const [executionMode, setExecutionMode] = useState<'safe' | 'live'>('safe');
+  const [showLiveConfirmModal, setShowLiveConfirmModal] = useState<boolean>(false);
+  const [showRetryConfirmModal, setShowRetryConfirmModal] = useState<boolean>(false);
 
   // Input & Option State
   const [prompt, setPrompt] = useState<string>(
@@ -48,6 +52,7 @@ export function App() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0);
   const [completedVideo, setCompletedVideo] = useState<VideoItem | null>(null);
+  const [generationError, setGenerationError] = useState<string | undefined>(undefined);
 
   // History Search & Filter Options
   const [historyFilter, setHistoryFilter] = useState<'all' | 'favorites' | 'completed' | 'failed' | 'queued'>('all');
@@ -86,8 +91,14 @@ export function App() {
     }
   }, [activeTab]);
 
-  // Initial load: Fetch model capabilities & history
+  // Initial load: Fetch execution mode, model capabilities & history
   useEffect(() => {
+    MoviqApiClient.fetchExecutionMode().then((res) => {
+      if (res && res.executionMode) {
+        setExecutionMode(res.executionMode);
+      }
+    });
+
     MoviqApiClient.fetchModelCapabilities().then((loadedModels) => {
       setModels(loadedModels);
       if (loadedModels.length > 0) {
@@ -95,6 +106,16 @@ export function App() {
       }
     });
   }, []);
+
+  const handleToggleExecutionMode = async (newMode: 'safe' | 'live') => {
+    try {
+      const res = await MoviqApiClient.updateExecutionMode(newMode);
+      setExecutionMode(res.executionMode);
+    } catch (err) {
+      console.error("Failed to update execution mode:", err);
+      setExecutionMode(newMode);
+    }
+  };
 
   // Fetch History whenever search, filters, or sorting changes
   const loadHistory = async (offsetVal = 0, isAppend = false) => {
@@ -227,14 +248,15 @@ export function App() {
     }
   };
 
-  // Trigger Video Generation
-  const handleGenerate = async () => {
+  // Internal Execution Core
+  const executeGeneration = async () => {
     if (!prompt.trim()) {
       setUiState('FAILED');
       return;
     }
 
     setCompletedVideo(null);
+    setGenerationError(undefined);
     setUiState('QUEUED');
 
     try {
@@ -263,15 +285,41 @@ export function App() {
       setVideos((prev) => [newVideo, ...prev]);
       setTotalHistoryCount((prev) => prev + 1);
       setUiState('COMPLETED');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setGenerationError(err?.message || 'Video generation could not be completed.');
       setUiState('FAILED');
     }
   };
 
+  // Trigger Video Generation with Safety Checks
+  const handleGenerate = () => {
+    if (!prompt.trim()) return;
+
+    if (executionMode === 'live') {
+      setShowLiveConfirmModal(true);
+    } else {
+      executeGeneration();
+    }
+  };
+
+  const handleConfirmLiveGenerate = () => {
+    setShowLiveConfirmModal(false);
+    executeGeneration();
+  };
+
   // Action handlers
   const handleRegenerate = () => {
-    handleGenerate();
+    if (executionMode === 'live') {
+      setShowRetryConfirmModal(true);
+    } else {
+      executeGeneration();
+    }
+  };
+
+  const handleConfirmLiveRetry = () => {
+    setShowRetryConfirmModal(false);
+    executeGeneration();
   };
 
   const handleCreateVariation = () => {
@@ -312,6 +360,8 @@ export function App() {
         setUiState={handleDevStateChange}
         historyCount={totalHistoryCount || videos.length}
         favoriteCount={favoriteCount}
+        executionMode={executionMode}
+        onToggleExecutionMode={handleToggleExecutionMode}
       />
 
       {/* Main Container */}
@@ -322,6 +372,38 @@ export function App() {
             {/* LEFT COLUMN: Creative Direction & Generation Controls */}
             <aside className="lg:col-span-5 space-y-4 bg-[#0c1324] p-4 lg:p-6 rounded-2xl border border-[#23293c] shadow-2xl">
               
+              {/* Active Execution Mode Status Banner */}
+              <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs transition-all ${
+                executionMode === 'safe'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  {executionMode === 'safe' ? (
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Zap className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0 animate-pulse" />
+                  )}
+                  <div>
+                    <span className="font-mono font-bold block text-xs">
+                      {executionMode === 'safe' ? 'SAFE MODE • LOCAL SYNTHETIC' : 'LIVE MODE • KIE.AI'}
+                    </span>
+                    <span className="text-[11px] opacity-80 block font-normal">
+                      {executionMode === 'safe'
+                        ? 'Testing & UI development. No provider credits consumed.'
+                        : 'Generation requests may consume provider credits.'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleToggleExecutionMode(executionMode === 'safe' ? 'live' : 'safe')}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-[11px] font-mono font-semibold transition-colors cursor-pointer shrink-0"
+                >
+                  Switch to {executionMode === 'safe' ? 'Live' : 'Safe'} Mode
+                </button>
+              </div>
+
               {/* Prompt Composer */}
               <PromptComposer
                 prompt={prompt}
@@ -373,14 +455,22 @@ export function App() {
               />
 
               {/* Primary Action Button: Generate Video */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handleGenerate}
                   disabled={!prompt.trim() || ['QUEUED', 'SUBMITTED', 'GENERATING', 'PROCESSING'].includes(uiState) || isEnhancing}
-                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm tracking-wide transition-all duration-200 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  className={`w-full py-3 px-6 rounded-xl font-bold text-sm tracking-wide transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 cursor-pointer ${
+                    executionMode === 'live'
+                      ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 focus-visible:ring-amber-500 shadow-amber-500/25 hover:shadow-amber-500/40'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 focus-visible:ring-emerald-500 shadow-emerald-500/20 hover:shadow-emerald-500/35'
+                  }`}
                 >
-                  <span className="uppercase tracking-wider">Generate Video</span>
+                  <Sparkles className="w-4 h-4 text-slate-950 fill-slate-950" aria-hidden="true" />
+                  <span className="font-mono uppercase tracking-wider text-xs font-bold">Generate Video</span>
+                  <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-950/15 text-slate-950 ml-1">
+                    {selectedDuration} • {selectedRatio}
+                  </span>
                 </button>
               </div>
             </aside>
@@ -392,6 +482,7 @@ export function App() {
                 completedVideo={completedVideo}
                 progressSteps={progressSteps}
                 progressInfo={progressInfo}
+                errorMessage={generationError}
                 onGenerate={handleGenerate}
                 onRegenerate={handleRegenerate}
                 onCreateVariation={handleCreateVariation}
@@ -432,6 +523,90 @@ export function App() {
           />
         )}
       </main>
+
+      {/* Live Generation Confirmation Modal */}
+      {showLiveConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#0c1324] border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <Zap className="w-5 h-5 fill-amber-400 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white font-mono">Live Video Generation</h3>
+                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-semibold">
+                  LIVE MODE • KIE.AI
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-200 leading-relaxed font-medium">
+              Live generation uses Kie.ai credits.
+            </p>
+
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Proceeding will submit a commercial video task to Kie.ai ({selectedModelId}).
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowLiveConfirmModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLiveGenerate}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-bold tracking-wide transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                Generate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Retry Confirmation Modal */}
+      {showRetryConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-[#0c1324] border border-amber-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                <Zap className="w-5 h-5 fill-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white font-mono">Retry Live Generation</h3>
+                <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-semibold">
+                  LIVE MODE • KIE.AI
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-200 leading-relaxed font-medium">
+              Retrying will create a new Kie.ai generation and may consume additional credits.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRetryConfirmModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLiveRetry}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-bold tracking-wide transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+              >
+                Retry Generation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

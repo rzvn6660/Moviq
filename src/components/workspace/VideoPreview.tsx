@@ -24,6 +24,7 @@ interface VideoPreviewProps {
   completedVideo: VideoItem | null;
   progressSteps: GenerationProgressStep[];
   progressInfo?: GenerationProgressInfo;
+  errorMessage?: string;
   onGenerate: () => void;
   onRegenerate: () => void;
   onCreateVariation: () => void;
@@ -43,6 +44,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   completedVideo,
   progressSteps,
   progressInfo,
+  errorMessage,
   onGenerate,
   onRegenerate,
   onCreateVariation,
@@ -165,14 +167,14 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
         {/* 1. EMPTY STATE */}
         {uiState === 'EMPTY' && (
-          <div className="relative z-10 text-center p-8 max-w-md space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/10">
-              <Film className="w-8 h-8 text-amber-400" aria-hidden="true" />
+          <div className="relative z-10 text-center p-8 max-w-md space-y-3 font-sans">
+            <div className="w-14 h-14 rounded-2xl bg-[#151b2d] border border-[#23293c] flex items-center justify-center mx-auto shadow-xl">
+              <Film className="w-7 h-7 text-amber-400" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-slate-100">Your Stage is Ready</h3>
-              <p className="text-xs text-slate-400">
-                Type an idea in the prompt composer or pick a sample preset to start generating cinematic video.
+              <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight uppercase">MOVIQ CANVAS READY</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Describe your vision in the prompt composer or choose a sample prompt to initialize video synthesis.
               </p>
             </div>
           </div>
@@ -180,36 +182,29 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
         {/* 2. READY STATE */}
         {uiState === 'READY' && (
-          <div className="relative z-10 text-center p-8 max-w-md space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/20">
-              <Zap className="w-8 h-8 text-amber-400 animate-pulse" aria-hidden="true" />
+          <div className="relative z-10 text-center p-8 max-w-md space-y-3 font-sans">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto shadow-xl">
+              <Zap className="w-7 h-7 text-amber-400" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-slate-100">Ready to Render</h3>
-              <p className="text-xs text-slate-400">
-                Click <strong className="text-amber-400">"Generate Video"</strong> on the left control panel to launch the AI pipeline.
+              <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight uppercase">READY TO GENERATE</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Click <strong className="text-amber-400">"Generate Video"</strong> on the control panel to execute the multi-provider pipeline.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onGenerate}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs hover:from-amber-400 hover:to-amber-500 transition-all shadow-lg shadow-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-            >
-              Generate Video Now
-            </button>
           </div>
         )}
 
         {/* 3. ENHANCING STATE */}
         {uiState === 'ENHANCING' && (
-          <div className="relative z-10 text-center p-8 max-w-md space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center mx-auto">
-              <Sparkles className="w-8 h-8 text-amber-400 animate-spin" aria-hidden="true" />
+          <div className="relative z-10 text-center p-8 max-w-md space-y-3 font-sans">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto">
+              <Sparkles className="w-7 h-7 text-amber-400 animate-spin" aria-hidden="true" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-slate-100">AI Director at Work</h3>
-              <p className="text-xs text-slate-400">
-                Synthesizing camera angles, volumetric lighting notes, and structured breakdown...
+              <h3 className="text-base font-bold text-slate-100 font-mono tracking-tight uppercase">AI DIRECTOR SYNTHESIS</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Constructing camera tracking angles, lighting maps, and keyframe prompts...
               </p>
             </div>
           </div>
@@ -304,7 +299,8 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
               type={uiState}
               errorMessage={
                 completedVideo?.errorMessage ||
-                'Generation request timed out waiting for GPU model allocation. Prompt parameters saved.'
+                errorMessage ||
+                'Video generation could not be completed.'
               }
               onRetry={onGenerate}
             />

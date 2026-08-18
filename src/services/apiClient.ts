@@ -6,7 +6,8 @@ import type {
   GenerationProgressStep,
   GenerationProgressInfo,
   ModelCapability,
-  HistoryFilterOptions
+  HistoryFilterOptions,
+  ExecutionModeSettings
 } from '../types/video';
 import type { 
   EnhancePromptResponse, 
@@ -20,6 +21,11 @@ import { MOCK_MODEL_CAPABILITIES } from '../constants/presets';
 // Environment-driven API configuration (no hardcoded constants)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api/v1';
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+// Configurable Polling Strategy Constants for Video Generation Pipeline
+export const GENERATION_POLL_INTERVAL_MS = 2000; // 2 seconds between poll attempts
+export const GENERATION_MAX_WAIT_MS = 600000; // 10 minutes max timeout (600,000ms), matching backend GENERATION_TIMEOUT_SECONDS
+export const MAX_CONSECUTIVE_NETWORK_ERRORS = 5; // Max consecutive transient network errors before declaring network failure
 
 export class MoviqApiClient {
   /**
@@ -182,35 +188,58 @@ export class MoviqApiClient {
       const initialStatus: GenerationStatusResponse = await response.json();
       const genId = initialStatus.id;
 
-      // 2. Poll until completed or failed
+      // 2. Poll until completed, failed, timed out, or max wait duration exceeded
       let statusData = initialStatus;
-      let maxPolls = 60;
+      const startTime = Date.now();
+      let consecutiveNetworkErrors = 0;
 
-      while (maxPolls > 0 && !['COMPLETED', 'FAILED', 'TIMED_OUT'].includes(statusData.state)) {
-        await new Promise((r) => setTimeout(r, 600));
+      while (
+        Date.now() - startTime < GENERATION_MAX_WAIT_MS &&
+        !['COMPLETED', 'FAILED', 'TIMED_OUT'].includes(statusData.state)
+      ) {
+        await new Promise((r) => setTimeout(r, GENERATION_POLL_INTERVAL_MS));
 
-        const pollResponse = await fetch(`${API_BASE_URL}/generations/${genId}`);
-        if (pollResponse.ok) {
-          statusData = await pollResponse.json();
-          if (statusData.progress && onProgress) {
-            const stepIndex = statusData.progress.currentStepIndex || 1;
-            const currentStep: GenerationProgressStep = {
-              id: stepIndex,
-              state: statusData.state,
-              title: statusData.progress.stepTitle || 'Processing',
-              description: statusData.progress.stepDescription || 'Rendering motion',
-              status: 'active'
-            };
-            onProgress(statusData.progress, currentStep);
+        try {
+          const pollResponse = await fetch(`${API_BASE_URL}/generations/${genId}`);
+          if (pollResponse.ok) {
+            consecutiveNetworkErrors = 0; // Reset consecutive errors on successful response
+            statusData = await pollResponse.json();
+            if (statusData.progress && onProgress) {
+              const stepIndex = statusData.progress.currentStepIndex || 1;
+              const currentStep: GenerationProgressStep = {
+                id: stepIndex,
+                state: statusData.state,
+                title: statusData.progress.stepTitle || 'Processing',
+                description: statusData.progress.stepDescription || 'Rendering motion',
+                status: 'active'
+              };
+              onProgress(statusData.progress, currentStep);
+            }
+          } else {
+            consecutiveNetworkErrors++;
+            console.warn(`Polling request returned HTTP ${pollResponse.status} (${consecutiveNetworkErrors}/${MAX_CONSECUTIVE_NETWORK_ERRORS})`);
+            if (consecutiveNetworkErrors >= MAX_CONSECUTIVE_NETWORK_ERRORS) {
+              throw new Error(`Generation status check failed after ${MAX_CONSECUTIVE_NETWORK_ERRORS} consecutive server errors (HTTP ${pollResponse.status}).`);
+            }
+          }
+        } catch (err: any) {
+          if (err?.message?.includes('consecutive server errors')) {
+            throw err;
+          }
+          consecutiveNetworkErrors++;
+          console.warn(`Polling network error (${consecutiveNetworkErrors}/${MAX_CONSECUTIVE_NETWORK_ERRORS}):`, err);
+          if (consecutiveNetworkErrors >= MAX_CONSECUTIVE_NETWORK_ERRORS) {
+            throw new Error(`Lost network connection to generation backend. Please check network status.`);
           }
         }
-        maxPolls--;
       }
 
       if (statusData.state === 'COMPLETED' && statusData.video) {
         return statusData.video;
       } else if (statusData.state === 'FAILED' || statusData.state === 'TIMED_OUT') {
-        throw new Error(statusData.errorMessage || `Generation ended with state ${statusData.state}`);
+        throw new Error(statusData.errorMessage || `Generation process ended with state ${statusData.state}`);
+      } else if (Date.now() - startTime >= GENERATION_MAX_WAIT_MS) {
+        throw new Error(`Generation process timed out after ${Math.round(GENERATION_MAX_WAIT_MS / 1000)} seconds waiting for provider.`);
       }
     }
 
@@ -496,6 +525,57 @@ export class MoviqApiClient {
         { provider: 'remote_wan', name: 'Self-Hosted Remote CUDA Worker', avg_generation_time_seconds: 3.2, avg_queue_time_seconds: 2.0, success_rate_percentage: 99.0, total_generations: 80, supported_resolutions: ['576x320'], typical_duration: '5s', estimated_cost_per_sec: 0.00, motion_quality_score: 8.5, realism_score: 8.4, reliability_score: 9.7, overall_rating: 'EXCELLENT' },
         { provider: 'ltx', name: 'LTX Video Local PyTorch GPU Engine', avg_generation_time_seconds: 4.5, avg_queue_time_seconds: 0.5, success_rate_percentage: 100.0, total_generations: 64, supported_resolutions: ['1280x720'], typical_duration: '5s', estimated_cost_per_sec: 0.00, motion_quality_score: 8.6, realism_score: 8.5, reliability_score: 9.9, overall_rating: 'EXCELLENT' }
       ]
+    };
+  }
+
+  /**
+   * Fetches active runtime execution mode (safe vs live)
+   */
+  static async fetchExecutionMode(): Promise<ExecutionModeSettings> {
+    if (!USE_MOCK_API) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings/execution-mode`);
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (err) {
+        console.warn("Backend /settings/execution-mode endpoint error", err);
+      }
+    }
+    return {
+      executionMode: 'safe',
+      displayLabel: 'SAFE MODE • LOCAL SYNTHETIC',
+      provider: 'kie',
+      isSafe: true,
+      warningMessage: null
+    };
+  }
+
+  /**
+   * Updates runtime execution mode (safe vs live)
+   */
+  static async updateExecutionMode(mode: 'safe' | 'live'): Promise<ExecutionModeSettings> {
+    if (!USE_MOCK_API) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings/execution-mode`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ executionMode: mode })
+        });
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (err) {
+        console.warn("Backend update execution mode error", err);
+      }
+    }
+    const isSafe = mode === 'safe';
+    return {
+      executionMode: mode,
+      displayLabel: isSafe ? 'SAFE MODE • LOCAL SYNTHETIC' : 'LIVE MODE • KIE.AI',
+      provider: 'kie',
+      isSafe,
+      warningMessage: isSafe ? null : 'Generation requests may consume provider credits.'
     };
   }
 }

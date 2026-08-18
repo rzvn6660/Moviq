@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, History, Clapperboard, Sliders, Star, Activity } from 'lucide-react';
+import { Sparkles, History, Clapperboard, Sliders, Star, Activity, ShieldCheck, Zap } from 'lucide-react';
 import type { UIState } from '../../types/video';
 
 interface TopNavigationProps {
@@ -9,6 +9,8 @@ interface TopNavigationProps {
   setUiState: (state: UIState) => void;
   historyCount: number;
   favoriteCount?: number;
+  executionMode: 'safe' | 'live';
+  onToggleExecutionMode: (newMode: 'safe' | 'live') => void;
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({
@@ -18,6 +20,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   setUiState,
   historyCount,
   favoriteCount = 0,
+  executionMode,
+  onToggleExecutionMode,
 }) => {
   const allStates: UIState[] = [
     'EMPTY',
@@ -59,11 +63,31 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             </div>
           </button>
 
-          {/* System Status Pill */}
-          <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
-            <span className="font-mono text-[11px]">Provider Orchestrator Operational</span>
-          </div>
+          {/* Execution Mode Selector Badge */}
+          {executionMode === 'safe' ? (
+            <button
+              onClick={() => onToggleExecutionMode('live')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all text-xs font-mono font-bold cursor-pointer shadow-sm"
+              title="Click to switch to Live Demo Mode (Kie.ai)"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>SAFE MODE • LOCAL SYNTHETIC</span>
+            </button>
+          ) : (
+            <div className="flex flex-col items-start">
+              <button
+                onClick={() => onToggleExecutionMode('safe')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 hover:bg-amber-500/30 transition-all text-xs font-mono font-bold cursor-pointer shadow-md shadow-amber-500/10"
+                title="Click to switch to Safe Mode (Local Synthetic)"
+              >
+                <Zap className="w-4 h-4 text-amber-400 fill-amber-400 animate-pulse" />
+                <span>LIVE MODE • KIE.AI</span>
+              </button>
+              <span className="text-[10px] text-amber-400/90 font-mono tracking-tight pl-1 mt-0.5 font-medium">
+                Generation requests may consume provider credits.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Center Workspace / History / Favorites Navigation Tabs */}
@@ -72,9 +96,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             role="tab"
             aria-selected={activeTab === 'workspace'}
             onClick={() => setActiveTab('workspace')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 ${
               activeTab === 'workspace'
-                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm'
+                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -86,9 +110,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             role="tab"
             aria-selected={activeTab === 'history'}
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 ${
               activeTab === 'history'
-                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm'
+                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -103,9 +127,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             role="tab"
             aria-selected={activeTab === 'favorites'}
             onClick={() => setActiveTab('favorites')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 ${
               activeTab === 'favorites'
-                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm'
+                ? 'bg-[#191f31] text-amber-400 border border-amber-500/30 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -122,9 +146,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             role="tab"
             aria-selected={activeTab === 'health'}
             onClick={() => setActiveTab('health')}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 ${
               activeTab === 'health'
-                ? 'bg-[#191f31] text-cyan-400 border border-cyan-500/30 shadow-sm'
+                ? 'bg-[#191f31] text-cyan-400 border border-cyan-500/30 shadow-sm font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >

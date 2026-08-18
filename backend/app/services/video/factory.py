@@ -29,13 +29,10 @@ def get_video_provider(model_id: Optional[str] = None) -> BaseVideoProvider:
         elif prov == "hailuo":
             from app.services.video.hailuo import HailuoVideoProvider
             return HailuoVideoProvider()
-        elif prov == "huggingface":
+        elif prov in ("huggingface", "hf"):
             from app.services.video.huggingface import HuggingFaceVideoProvider
             return HuggingFaceVideoProvider()
-        elif prov in ("fal", "fal-ai"):
-            from app.services.video.huggingface import HuggingFaceVideoProvider
-            return HuggingFaceVideoProvider()
-        elif prov in ("wan", "remote_wan"):
+        elif prov in ("remote_wan", "remote-wan"):
             from app.services.video.remote_wan import RemoteWanVideoProvider
             return RemoteWanVideoProvider()
         elif prov == "ltx":

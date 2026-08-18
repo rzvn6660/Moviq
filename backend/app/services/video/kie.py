@@ -169,13 +169,16 @@ class KieVideoProvider(VideoProvider):
                 code = res_json.get("code")
                 if code is not None and code != 200:
                     msg = res_json.get("msg") or res_json.get("message") or "Unknown Kie.ai API error"
+                    is_credit_err = code == 402 or "credit" in msg.lower() or "quota" in msg.lower() or "balance" in msg.lower()
                     if settings.ENABLE_SYNTHETIC_FALLBACK:
-                        logger.warning(f"Kie API returned code {code}: {msg}. Fallback mode active.")
+                        logger.warning(f"Kie API returned code {code}: {msg}. Synthetic fallback mode active.")
                         _KIE_JOBS[job_id]["is_test_mode"] = True
                         _KIE_JOBS[job_id]["task_id"] = f"kie-task-{uuid.uuid4().hex[:8]}"
                         _KIE_JOBS[job_id]["status"] = GenerationStatus.GENERATING
                         _KIE_JOBS[job_id]["progress"] = 35
                         return job_id
+                    if is_credit_err:
+                        raise KieQuotaExceededException(f"Kie.ai provider credits depleted: {msg}")
                     raise KieGenerationFailedException(f"Kie.ai API returned code {code}: {msg}")
 
                 data = res_json.get("data") or {}

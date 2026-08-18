@@ -60,7 +60,9 @@ def test_unsupported_model_rejection():
 async def test_generation_service_persists_v2_provider_execution_mode(db_session):
     original_provider = settings.VIDEO_PROVIDER
     old_synth = settings.ENABLE_SYNTHETIC_FALLBACK
+    old_key = settings.KIE_API_KEY
     settings.VIDEO_PROVIDER = "kie"
+    settings.KIE_API_KEY = "kie_test_key_123"
     settings.ENABLE_SYNTHETIC_FALLBACK = True
 
     service = GenerationService(db_session)
@@ -79,3 +81,5 @@ async def test_generation_service_persists_v2_provider_execution_mode(db_session
     assert gen.provider == "kie"
 
     settings.VIDEO_PROVIDER = original_provider
+    settings.ENABLE_SYNTHETIC_FALLBACK = old_synth
+    settings.KIE_API_KEY = old_key

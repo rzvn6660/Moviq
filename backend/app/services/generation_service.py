@@ -33,7 +33,6 @@ from app.core.exceptions import (
     NegativePromptNotSupportedException,
     ProviderFailureException,
     GenerationTimeoutException,
-    FalResultErrorException,
 )
 
 
@@ -130,10 +129,14 @@ class GenerationService:
         # 2. Validate model capabilities & configuration
         model_cap = get_model_capability(request.model_id)
 
-        # Allow test mock instance override or mock settings
-        provider_instance = getattr(self, "video_provider", None) or get_video_provider(request.model_id)
+        is_safe_mode = settings.MOVIQ_EXECUTION_MODE.lower() == "safe"
+        if is_safe_mode and not getattr(self, "video_provider", None):
+            from app.services.video.mock import MockVideoProvider
+            provider_instance = MockVideoProvider()
+        else:
+            provider_instance = getattr(self, "video_provider", None) or get_video_provider(request.model_id)
 
-        if settings.VIDEO_PROVIDER.lower() != "mock" and not getattr(self, "video_provider", None):
+        if not is_safe_mode and settings.VIDEO_PROVIDER.lower() != "mock" and not getattr(self, "video_provider", None):
             if not model_cap.configured or not model_cap.is_available:
                 raise ProviderFailureException(
                     f"Model '{model_cap.name}' is unconfigured or unavailable (Status: {model_cap.status_label}). "
@@ -175,6 +178,10 @@ class GenerationService:
         logger.info(f"Generation Started: id='{gen_id}', model='{model_cap.id}'")
         logger.info(f"Provider Selected: provider='{model_cap.provider}', exec_mode='{model_cap.execution_mode.value}'")
 
+        # Determine current execution mode display label
+        is_safe_mode = settings.MOVIQ_EXECUTION_MODE.lower() == "safe"
+        exec_mode_label = "SAFE MODE • LOCAL SYNTHETIC" if is_safe_mode else "LIVE MODE • KIE.AI"
+
         generation = Generation(
             id=gen_id,
             idempotency_key=idempotency_key,
@@ -186,7 +193,7 @@ class GenerationService:
             duration=request.duration.value,
             provider=model_cap.provider,
             model_id=model_cap.id,
-            execution_mode=model_cap.execution_mode.value,
+            execution_mode=exec_mode_label,
             status=GenerationStatus.QUEUED,
             fidelity_score=fid_score,
             fidelity_label=fid_label,
@@ -208,11 +215,11 @@ class GenerationService:
         # Log initial timeline events
         self.log_event(gen_id, "Prompt Received", "SUCCESS", details={"prompt_length": len(request.prompt)})
         self.log_event(gen_id, "Prompt Enhanced", "SUCCESS", details={"enhanced_length": len(enhanced_prompt)})
-        self.log_event(gen_id, "Provider Selected", "SUCCESS", details={"provider": model_cap.provider, "model_id": model_cap.id, "smart_failover": bool(request.smart_failover)})
+        self.log_event(gen_id, "Provider Selected", "SUCCESS", details={"provider": generation.provider, "model_id": model_cap.id, "execution_mode": exec_mode_label, "smart_failover": bool(request.smart_failover)})
 
         # 9. Submit to resolved VideoProvider with optional Smart Failover
         try:
-            self.log_event(gen_id, "Health Check", "SUCCESS", details={"provider": model_cap.provider})
+            self.log_event(gen_id, "Health Check", "SUCCESS", details={"provider": generation.provider})
             provider_job_id = await provider_instance.submit_generation(generation)
             generation.provider_job_id = provider_job_id
             self.db.commit()
@@ -221,23 +228,27 @@ class GenerationService:
         except Exception as err:
             logger.error(f"Provider submission failed for generation '{gen_id}': {err}")
             
-            # Check Smart Failover
+            # Check Smart Failover (Disallowed for paid live generation auto-retry)
             if request.smart_failover:
-                logger.info(f"Smart Failover active for '{gen_id}'. Attempting fallback provider...")
-                self.log_event(gen_id, "Smart Failover Triggered", "WARNING", details={"failed_provider": model_cap.provider, "reason": str(err)})
-                try:
-                    fallback_prov_name = "huggingface" if model_cap.provider != "huggingface" else "remote_wan"
-                    fallback_instance = get_video_provider(fallback_prov_name)
-                    generation.provider = fallback_prov_name
-                    generation.failover_count = 1
-                    provider_job_id = await fallback_instance.submit_generation(generation)
-                    generation.provider_job_id = provider_job_id
-                    self.db.commit()
-                    self.log_event(gen_id, "Failover Submission Succeeded", "SUCCESS", details={"provider": fallback_prov_name, "provider_job_id": provider_job_id})
-                    return await self.get_generation_status(gen_id)
-                except Exception as fb_err:
-                    logger.error(f"Smart Failover attempt also failed: {fb_err}")
-                    self.log_event(gen_id, "Failover Exhausted", "FAILED", details={"reason": str(fb_err)})
+                if not is_safe_mode:
+                    logger.warning(f"Smart failover auto-retry blocked for '{gen_id}' because LIVE MODE is active. Auto-submitting paid tasks is forbidden.")
+                    self.log_event(gen_id, "Smart Failover Blocked", "WARNING", details={"reason": "Live paid auto-retry is forbidden."})
+                else:
+                    logger.info(f"Smart Failover active for '{gen_id}'. Attempting fallback provider...")
+                    self.log_event(gen_id, "Smart Failover Triggered", "WARNING", details={"failed_provider": model_cap.provider, "reason": str(err)})
+                    try:
+                        fallback_prov_name = "huggingface" if model_cap.provider != "huggingface" else "remote_wan"
+                        fallback_instance = get_video_provider(fallback_prov_name)
+                        generation.provider = fallback_prov_name
+                        generation.failover_count = 1
+                        provider_job_id = await fallback_instance.submit_generation(generation)
+                        generation.provider_job_id = provider_job_id
+                        self.db.commit()
+                        self.log_event(gen_id, "Failover Submission Succeeded", "SUCCESS", details={"provider": fallback_prov_name, "provider_job_id": provider_job_id})
+                        return await self.get_generation_status(gen_id)
+                    except Exception as fb_err:
+                        logger.error(f"Smart Failover attempt also failed: {fb_err}")
+                        self.log_event(gen_id, "Failover Exhausted", "FAILED", details={"reason": str(fb_err)})
 
             generation.status = GenerationStatus.FAILED
             generation.error_code = "SUBMISSION_FAILED"

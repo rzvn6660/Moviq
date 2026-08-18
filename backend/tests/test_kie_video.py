@@ -169,3 +169,75 @@ def test_kie_registry_and_factory_routing():
 
     settings.VIDEO_PROVIDER = orig_provider
     settings.KIE_API_KEY = orig_key
+
+
+@pytest.mark.asyncio
+async def test_kie_extended_polling_in_progress(sample_generation):
+    orig_prov = settings.VIDEO_PROVIDER
+    settings.VIDEO_PROVIDER = "kie"
+    try:
+        provider = KieVideoProvider(api_key="real_live_key_xyz", base_url="https://api.kie.ai")
+        create_resp = Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "task-long-poll"}})
+        generating_resp = Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "task-long-poll", "state": "generating"}})
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, \
+             patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_post.return_value = create_resp
+            mock_get.return_value = generating_resp
+
+            job_id = await provider.submit_generation(sample_generation)
+            
+            # Simulate multiple polling cycles while task is still rendering on Kie.ai
+            for _ in range(5):
+                status, pct = await provider.check_status(job_id)
+                assert status == GenerationStatus.GENERATING
+                assert pct >= 30
+    finally:
+        settings.VIDEO_PROVIDER = orig_prov
+
+
+@pytest.mark.asyncio
+async def test_kie_status_failure_message_propagation(sample_generation):
+    orig_prov = settings.VIDEO_PROVIDER
+    settings.VIDEO_PROVIDER = "kie"
+    try:
+        provider = KieVideoProvider(api_key="real_live_key_xyz", base_url="https://api.kie.ai")
+        create_resp = Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "task-fail"}})
+        fail_resp = Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "task-fail", "state": "fail", "failReason": "Kie AI GPU cluster capacity busy"}})
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, \
+             patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_post.return_value = create_resp
+            mock_get.return_value = fail_resp
+
+            job_id = await provider.submit_generation(sample_generation)
+
+            with pytest.raises(KieGenerationFailedException) as exc_info:
+                await provider.check_status(job_id)
+            assert "Kie AI GPU cluster capacity busy" in str(exc_info.value)
+    finally:
+        settings.VIDEO_PROVIDER = orig_prov
+
+
+@pytest.mark.asyncio
+async def test_kie_transient_http_error_recovery(sample_generation):
+    orig_prov = settings.VIDEO_PROVIDER
+    settings.VIDEO_PROVIDER = "kie"
+    try:
+        provider = KieVideoProvider(api_key="real_live_key_xyz", base_url="https://api.kie.ai")
+        create_resp = Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "task-transient"}})
+        error_resp = Response(502, json={"error": "Bad Gateway"})
+
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post, \
+             patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+            mock_post.return_value = create_resp
+            mock_get.return_value = error_resp
+
+            job_id = await provider.submit_generation(sample_generation)
+            status, pct = await provider.check_status(job_id)
+            assert status == GenerationStatus.GENERATING
+    finally:
+        settings.VIDEO_PROVIDER = orig_prov
+
+
+
