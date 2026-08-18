@@ -17,35 +17,37 @@ Moviq is an open-source AI video generation platform that unifies commercial AI 
 
 ---
 
-# 🎥 Live Demo
+# 🎬 Live AI Video Demo
 
 <p align="center">
   <img src="https://img.shields.io/badge/LIVE%20AI%20VIDEO-DEMO-amber?style=for-the-badge" alt="LIVE AI VIDEO DEMO">
 </p>
 
-Real AI video generation processed through Moviq's provider-independent orchestration pipeline.
+Real AI video generated through Moviq using **Kie.ai / Kling 3.0 Pro**, distinguished from local synthetic Safe Mode output.
 
 <p align="center">
-  <a href="demo-assets/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4">
-    <img src="https://img.shields.io/badge/%E2%96%B6%20Watch%20Live%20Demo-MP4%20Video-amber?style=for-the-badge" alt="Watch Live Demo">
+  <a href="https://github.com/rzvn6660/Moviq/releases/download/v3.1.0/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4">
+    <img src="demo-assets/create_studio.png" width="95%" alt="Moviq Studio Demo Preview — Click to Watch Real MP4 Video">
   </a>
-  <a href="./docs/DEVELOPER_QUICKSTART.md">
-    <img src="https://img.shields.io/badge/Developer-Quickstart-success?style=for-the-badge" alt="Developer Quickstart">
+</p>
+
+<p align="center">
+  <a href="https://github.com/rzvn6660/Moviq/releases/download/v3.1.0/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4">
+    <img src="https://img.shields.io/badge/%E2%96%B6%20Watch%20Live%20AI%20Video-Download%20MP4-amber?style=for-the-badge&logo=github" alt="Watch Live AI Video">
   </a>
-  <a href="./docs/API_DOCUMENTATION.md">
-    <img src="https://img.shields.io/badge/API-Documentation-orange?style=for-the-badge" alt="API Documentation">
+  <a href="https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0">
+    <img src="https://img.shields.io/badge/GitHub%20Release-v3.1.0-blue?style=for-the-badge&logo=github" alt="GitHub Release v3.1.0">
   </a>
 </p>
 
 ```text
-Prompt → AI Director → Provider Routing → Video Generation → OpenCV Validation → History
+Prompt → AI Director → Provider Routing → Kie.ai / Kling 3.0 → OpenCV Validation → History
 ```
-
-This artifact demonstrates a real live-provider generation (Kie.ai Kling 3.0 Pro) executed, polled, frame-validated, and delivered end-to-end through Moviq, distinguished from local synthetic Safe Mode output.
 
 > **Note**
 > 
-> Direct link to committed live video artifact: [`demo-assets/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4`](demo-assets/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4).
+> * **Live Release Asset**: [`moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4`](https://github.com/rzvn6660/Moviq/releases/download/v3.1.0/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4) attached to Release [`v3.1.0`](https://github.com/rzvn6660/Moviq/releases/tag/v3.1.0).
+> * **Repository Artifact**: [`demo-assets/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4`](demo-assets/moviq-sleek-black-sports-car-driving-through-a-futuristic-city-at.mp4).
 
 ---
 
